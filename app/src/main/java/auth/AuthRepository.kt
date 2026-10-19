@@ -64,7 +64,8 @@ class AuthRepository(private val context: Context) {
     suspend fun login(email: String, password: String): AuthResult {
         return withContext(Dispatchers.IO) {
             if (email.isBlank() || password.isBlank()) return@withContext AuthResult.Error("Enter your email and password")
-            val user = userDao.findByEmail(email.trim())
+            val cleanEmail = email.trim().lowercase()
+            val user = userDao.findByEmail(cleanEmail)
             // Same message for "no such user" and "wrong password" so accounts can't be probed.
             if (user == null || !PasswordHasher.verify(password, user.passwordHash)) {
                 AuthResult.Error("Incorrect email or password")
@@ -75,7 +76,22 @@ class AuthRepository(private val context: Context) {
         }
     }
 
-    suspend fun logout() { context.sessionStore.edit { it.remove(KEY_USER_ID) } }
+    suspend fun logout() {
+        context.sessionStore.edit {
+            it.remove(KEY_USER_ID)
+        }
+    }
+
+    suspend fun getCurrentUser(): UserEntity? {
+        val userId = context.sessionStore.data
+            .map { it[KEY_USER_ID] }
+            .first()
+            ?: return null
+
+        return withContext(Dispatchers.IO) {
+            userDao.findById(userId)
+        }
+    }
 
     suspend fun isLoggedIn(): Boolean = context.sessionStore.data.map { it[KEY_USER_ID] }.first() != null
 
