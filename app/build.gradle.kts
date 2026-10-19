@@ -57,6 +57,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
+    implementation(libs.retrofit)
+    implementation(libs.converter.moshi)
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+
     // Jetpack Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -85,7 +90,9 @@ dependencies {
     // Google Material Components
     implementation(libs.material)
 
-//Unit testing
-testImplementation(libs.junit)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+    implementation(libs.kotlinx.coroutines.play.services)
 }
 

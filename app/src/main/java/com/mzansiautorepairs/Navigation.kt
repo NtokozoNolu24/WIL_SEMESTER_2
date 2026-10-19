@@ -9,22 +9,29 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mzansiautorepairs.screens.CustomerScreen
+import com.mzansiautorepairs.screens.GoogleRegisterScreen
 import com.mzansiautorepairs.screens.DashboardScreen
 import com.mzansiautorepairs.screens.JobCardDetailScreen
 import com.mzansiautorepairs.screens.JobCardScreen
 import com.mzansiautorepairs.screens.LoginScreen
 import com.mzansiautorepairs.screens.RegisterScreen
 import com.mzansiautorepairs.screens.ServiceScreen
+import com.mzansiautorepairs.screens.SettingsScreen
 
 object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
+
+    const val GOOGLE_REGISTER = "google_register"
     const val DASHBOARD = "dashboard"
     const val CUSTOMERS = "customers"
     const val JOBCARDS = "jobcards"
     const val JOBCARD_DETAIL = "jobcard/{jobId}"
     const val SERVICES = "services"
     fun jobCardDetail(id: String) = "jobcard/$id"
+
+    const val SETTINGS = "settings"
+
 }
 
 @Composable
@@ -43,6 +50,9 @@ fun AppNavHost(
         }
         composable(Routes.REGISTER) {
             RegisterScreen(navController = navController)
+        }
+        composable(Routes.GOOGLE_REGISTER) {
+            GoogleRegisterScreen(navController = navController)
         }
         composable(Routes.DASHBOARD) {
             DashboardScreen(navController = navController)
@@ -63,5 +73,9 @@ fun AppNavHost(
         composable(Routes.SERVICES) {
             ServiceScreen(navController = navController)
         }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(navController = navController)
+        }
+
     }
 }

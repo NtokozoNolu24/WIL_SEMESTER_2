@@ -1,6 +1,8 @@
+
 package com.mzansiautorepairs.screens
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -28,60 +30,34 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.mzansiautorepairs.Routes
 import com.mzansiautorepairs.auth.AuthRepository
+import com.mzansiautorepairs.auth.AuthResult
+import com.mzansiautorepairs.auth.GoogleAuthHelper
 import com.mzansiautorepairs.ui.theme.MzansiAutoRepairsTheme
 import com.mzansiautorepairs.ui.theme.Primary
 import com.mzansiautorepairs.ui.theme.PrimaryDark
+import kotlinx.coroutines.launch
 
-/**
- * LoginScreen component allowing workshop staff to log into the application.
- *
- * Navigation parameters:
- * @param onNavigateToDashboard Callback invoked when user successfully logs in.
- * @param onNavigateToRegister Callback invoked when user clicks the register link.
- * @param onNavigate Generic route navigation callback for flexibility with NavHost.
- */
 @SuppressLint("RememberReturnType")
 @Composable
-fun LoginScreen(
-    onNavigateToDashboard: () -> Unit = {},
-    onNavigateToRegister: () -> Unit = {},
-    onNavigate: ((String) -> Unit)? = null
-) {
-    // State management in Jetpack Compose:
-    // 'remember { mutableStateOf(...) }' preserves state across re-compositions.
-    // 'email' stores the user's entered email address.
+fun LoginScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
-    
-    // 'password' stores the user's entered password.
     var password by remember { mutableStateOf("") }
-    
-    // 'isPasswordVisible' toggles password visibility between hidden dots and clear text.
     var isPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Backend: authentication against the Room database
     val context = LocalContext.current
-    rememberCoroutineScope()
-    Box {
-        remember { AuthRepository(context.applicationContext) }
+    val scope = rememberCoroutineScope()
+
+    val authRepo = remember {
+        AuthRepository(context.applicationContext)
     }
 
-    // Navigation logic wrapper helper
-    fun handleNavigateToDashboard() {
-        if (onNavigate != null) {
-            onNavigate(Routes.DASHBOARD)
-        } else {
-            onNavigateToDashboard()
-        }
-    }
-
-    fun handleNavigateToRegister() {
-        if (onNavigate != null) {
-            onNavigate(Routes.REGISTER)
-        } else {
-            onNavigateToRegister()
-        }
+    val googleAuthHelper = remember {
+        GoogleAuthHelper(context.applicationContext)
     }
 
     Scaffold(
@@ -96,9 +72,8 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(32.dp))
 
-            // Branding / Workshop Logo Header
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -114,7 +89,7 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
             Text(
                 text = "Mzansi Auto Repairs",
@@ -129,67 +104,133 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(32.dp))
 
-            // Email Input Field
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email Address") },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Email,
+                        Icons.Default.Email,
                         contentDescription = "Email Icon"
                     )
                 },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // Password Input Field with Toggle Visibility
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Lock,
+                        Icons.Default.Lock,
                         contentDescription = "Lock Icon"
                     )
                 },
                 trailingIcon = {
-                    val image = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
-                    val description = if (isPasswordVisible) "Hide password" else "Show password"
+                    val image = if (isPasswordVisible) {
+                        Icons.Default.Visibility
+                    } else {
+                        Icons.Default.VisibilityOff
+                    }
 
-                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                        Icon(imageVector = image, contentDescription = description)
+                    IconButton(
+                        onClick = {
+                            isPasswordVisible = !isPasswordVisible
+                        }
+                    ) {
+                        Icon(
+                            imageVector = image,
+                            contentDescription = if (isPasswordVisible) {
+                                "Hide password"
+                            } else {
+                                "Show password"
+                            }
+                        )
                     }
                 },
                 singleLine = true,
-                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                visualTransformation = if (isPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(Modifier.height(24.dp))
 
-            // Sign In Button -> Navigates to Dashboard
+            // Existing email and password login
             Button(
+                enabled = !isLoading,
                 onClick = {
-                    // Navigate to Dashboard screen
-                    handleNavigateToDashboard()
+                    errorMessage = null
+
+                    if (email.isBlank() || password.isBlank()) {
+                        errorMessage = "Enter your email and password"
+                    } else {
+                        isLoading = true
+
+                        scope.launch {
+                            try {
+                                when (
+                                    val result = authRepo.login(
+                                        email = email,
+                                        password = password
+                                    )
+                                ) {
+                                    is AuthResult.Success -> {
+                                        navController.navigate(
+                                            Routes.DASHBOARD
+                                        ) {
+                                            popUpTo(Routes.LOGIN) {
+                                                inclusive = true
+                                            }
+                                        }
+                                    }
+
+                                    is AuthResult.Error -> {
+                                        errorMessage = result.message
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e(
+                                    "LoginScreen",
+                                    "Login failed",
+                                    e
+                                )
+                                errorMessage =
+                                    "Login failed. Please try again."
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryDark)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryDark
+                )
             ) {
-                val isLoading = false
                 if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
                 } else {
                     Text(
                         text = "Sign In",
@@ -197,15 +238,96 @@ fun LoginScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
-                }
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // Text Button to navigate to Register screen
-            TextButton(
+            // Google Sign-In
+            OutlinedButton(
+                enabled = !isLoading,
                 onClick = {
-                    // Navigate to Register screen
-                    handleNavigateToRegister()
+                    errorMessage = null
+                    isLoading = true
+
+                    scope.launch {
+                        try {
+                            val firebaseUser =
+                                googleAuthHelper.signInWithGoogle(context)
+
+                            val googleEmail = firebaseUser.email
+
+                            if (googleEmail.isNullOrBlank()) {
+                                errorMessage =
+                                    "Your Google account has no email address."
+                            } else {
+                                val existingUser =
+                                    authRepo.findGoogleUser(googleEmail)
+
+                                if (existingUser != null) {
+                                    // Existing local staff member
+                                    navController.navigate(
+                                        Routes.DASHBOARD
+                                    ) {
+                                        popUpTo(Routes.LOGIN) {
+                                            inclusive = true
+                                        }
+                                    }
+                                } else {
+                                    // Pass account details to Google registration
+                                    navController.currentBackStackEntry
+                                        ?.savedStateHandle
+                                        ?.set(
+                                            "googleName",
+                                            firebaseUser.displayName.orEmpty()
+                                        )
+
+                                    navController.currentBackStackEntry
+                                        ?.savedStateHandle
+                                        ?.set(
+                                            "googleEmail",
+                                            googleEmail
+                                        )
+
+                                    navController.navigate(
+                                        Routes.GOOGLE_REGISTER
+                                    )
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(
+                                "LoginScreen",
+                                "Google sign-in failed",
+                                e
+                            )
+                            errorMessage =
+                                "Google sign-in failed or was cancelled. Please try again."
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Text("Continue with Google")
+            }
+
+            errorMessage?.let { message ->
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            TextButton(
+                enabled = !isLoading,
+                onClick = {
+                    navController.navigate(Routes.REGISTER)
                 }
             ) {
                 Text(
@@ -214,25 +336,17 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(32.dp))
         }
     }
-}
-
-/**
- * Overload accepting NavController directly for ease of use in Navigation hosts.
- */
-@Composable
-fun LoginScreen(navController: NavController) {
-    LoginScreen(
-        onNavigate = { route -> navController.navigate(route) }
-    )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
     MzansiAutoRepairsTheme {
-        LoginScreen()
+        LoginScreen(
+            navController = rememberNavController()
+        )
     }
 }

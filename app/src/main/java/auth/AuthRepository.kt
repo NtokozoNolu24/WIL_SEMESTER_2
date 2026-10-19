@@ -61,10 +61,76 @@ class AuthRepository(private val context: Context) {
         }
     }
 
+    suspend fun registerWithGoogle(
+        fullName: String,
+        email: String,
+        phone: String,
+        role: UserRole
+    ): AuthResult {
+        return withContext(Dispatchers.IO) {
+            val cleanEmail = email.trim().lowercase()
+            val cleanName = fullName.trim()
+            val cleanPhone = phone.trim()
+
+            when {
+                cleanName.isBlank() ->
+                    AuthResult.Error("Full name is required")
+
+                !android.util.Patterns.EMAIL_ADDRESS
+                    .matcher(cleanEmail).matches() ->
+                    AuthResult.Error("Enter a valid email address")
+
+                cleanPhone.filter { it.isDigit() }.length < 10 ->
+                    AuthResult.Error("Enter a valid phone number")
+
+                role == UserRole.ADMIN ->
+                    AuthResult.Error(
+                        "Administrator accounts require authorised setup"
+                    )
+
+                userDao.findByEmail(cleanEmail) != null ->
+                    AuthResult.Error(
+                        "An account with this email already exists. Please sign in."
+                    )
+
+                else -> {
+                    val user = UserEntity(
+                        id = "U" + UUID.randomUUID()
+                            .toString().take(8),
+                        fullName = cleanName,
+                        email = cleanEmail,
+                        phone = cleanPhone,
+                        role = role.name,
+                        passwordHash = PasswordHasher.hash(UUID.randomUUID().toString())
+                    )
+
+                    userDao.insert(user)
+                    saveSession(user.id)
+
+                    AuthResult.Success(user)
+                }
+            }
+        }
+    }
+
+    suspend fun findGoogleUser(email: String): UserEntity? {
+        return withContext(Dispatchers.IO) {
+            val cleanEmail = email.trim().lowercase()
+            val user = userDao.findByEmail(cleanEmail)
+
+            if (user != null) {
+                saveSession(user.id)
+            }
+
+            user
+        }
+    }
+
     suspend fun login(email: String, password: String): AuthResult {
         return withContext(Dispatchers.IO) {
             if (email.isBlank() || password.isBlank()) return@withContext AuthResult.Error("Enter your email and password")
-            val user = userDao.findByEmail(email.trim())
+            val cleanEmail = email.trim().lowercase()
+            val user = userDao.findByEmail(cleanEmail)
             // Same message for "no such user" and "wrong password" so accounts can't be probed.
             if (user == null || !PasswordHasher.verify(password, user.passwordHash)) {
                 AuthResult.Error("Incorrect email or password")
@@ -75,7 +141,22 @@ class AuthRepository(private val context: Context) {
         }
     }
 
-    suspend fun logout() { context.sessionStore.edit { it.remove(KEY_USER_ID) } }
+    suspend fun logout() {
+        context.sessionStore.edit {
+            it.remove(KEY_USER_ID)
+        }
+    }
+
+    suspend fun getCurrentUser(): UserEntity? {
+        val userId = context.sessionStore.data
+            .map { it[KEY_USER_ID] }
+            .first()
+            ?: return null
+
+        return withContext(Dispatchers.IO) {
+            userDao.findById(userId)
+        }
+    }
 
     suspend fun isLoggedIn(): Boolean = context.sessionStore.data.map { it[KEY_USER_ID] }.first() != null
 

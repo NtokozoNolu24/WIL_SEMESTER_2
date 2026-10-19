@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1020590438428",
+    "firebase_url": "https://mzansiautorepairs-41f49-default-rtdb.firebaseio.com",
+    "project_id": "mzansiautorepairs-41f49",
+    "storage_bucket": "mzansiautorepairs-41f49.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1020590438428:android:edd63dec8d146657ed87d9",
+        "android_client_info": {
+          "package_name": "com.mzansiautorepairs"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1020590438428-i6po0mp3jautm27eokvbu997ia05159t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mzansiautorepairs",
+            "certificate_hash": "964f16d805463458f42994ef74ae4fa2042cdd91"
+          }
+        },
+        {
+          "client_id": "1020590438428-ibp5m63llphk1v8vc1d36hdmqj4j27l7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3nTbQmmJDi1VLSBwy8d954PV5VadgJL0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1020590438428-ibp5m63llphk1v8vc1d36hdmqj4j27l7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,4 +1,4 @@
-package com.mzansiautorepairs.data
+﻿package com.mzansiautorepairs.data
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -15,6 +15,9 @@ interface UserDao {
 
     @Query("SELECT * FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1")
     suspend fun findByEmail(email: String): UserEntity?
+
+    @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
+    suspend fun findById(userId: String): UserEntity?
 
     @Query("SELECT COUNT(*) FROM users")
     suspend fun count(): Int
