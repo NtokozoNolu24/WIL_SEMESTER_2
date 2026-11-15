@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reviews - Mzansi Auto Repairs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #0b1d2e;
+            --blue: #1a3a5c;
+            --gold: #d4a843;
+            --light: #f4f6f9;
+            --text: #1e2a3a;
+            --muted: #6c757d;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: var(--light);
+            color: var(--text);
+            padding-top: 72px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 22px;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* NAVBAR - SAME AS INDEX */
+        .navbar {
+            background: linear-gradient(135deg, var(--navy), var(--blue));
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .nav-inner {
+            min-height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--white);
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+            .nav-links a {
+                color: white;
+                padding: 9px 12px;
+                border-radius: 7px;
+                font-size: 0.9rem;
+                transition: 0.2s;
+            }
+
+                .nav-links a:hover, .nav-links a.active {
+                    background: var(--gold);
+                    color: var(--navy);
+                }
+
+        .hamburger {
+            display: none;
+            background: none;
+            color: white;
+            border: none;
+            font-size: 1.6rem;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        /* ALL ICONS NAVY - LIKE YOUR INDEX */
+        .btn i, .navbar-brand i, footer h3 i, footer p i {
+            color: var(--navy);
+        }
+
+        .navbar .nav-inner i {
+            color: var(--white);
+        }
+
+        .nav-links a:hover i, .nav-links a.active i {
+            color: var(--navy) !important;
+        }
+
+        .btn {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 9px;
+            padding: 13px 24px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: var(--navy);
+        }
+
+            .btn-primary:hover {
+                background: #e8c86a;
+                transform: translateY(-2px);
+            }
+
+        .page-header {
+            background: linear-gradient(135deg, #0b1d2e, #1a3a5c);
+            color: #fff;
+            padding: 80px 0 50px;
+            text-align: center;
+        }
+
+            .page-header h1 {
+                font-size: 2.6rem;
+            }
+
+            .page-header p {
+                color: #e0e7ef;
+            }
+
+        /* RATING SUMMARY - STARS NOW NAVY */
+        .rating-summary {
+            background: #fff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            text-align: center;
+            margin-bottom: 30px;
+            margin-top: 30px;
+        }
+
+            .rating-summary .big-rating {
+                font-size: 4rem;
+                font-weight: 700;
+                color: var(--navy);
+            }
+
+            .rating-summary .stars-big {
+                color: var(--navy);
+                font-size: 2rem;
+                letter-spacing: 4px;
+            }
+
+                .rating-summary .stars-big i {
+                    color: var(--navy);
+                }
+
+        .review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            padding: 20px 0;
+        }
+
+        .review-card {
+            background: #fff;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            transition: 0.25s;
+        }
+
+            .review-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            }
+
+            .review-card .stars {
+                color: var(--navy);
+                font-size: 1.1rem;
+                letter-spacing: 2px;
+            }
+
+                .review-card .stars i {
+                    color: var(--navy);
+                }
+
+            .review-card .reviewer {
+                font-weight: 600;
+                color: var(--navy);
+            }
+
+            .review-card .date {
+                color: #999;
+                font-size: 0.85rem;
+            }
+
+            .review-card .comment {
+                margin-top: 10px;
+                color: var(--muted);
+                line-height: 1.6;
+            }
+
+        .write-review-section {
+            background: #fff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            margin: 30px 0;
+        }
+
+            .write-review-section h3 {
+                color: var(--navy);
+                margin-bottom: 15px;
+            }
+
+        /* STAR RATING INPUT - NOW NAVY */
+        .star-rating {
+            display: flex;
+            gap: 10px;
+            font-size: 2rem;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+            .star-rating .star {
+                color: #ddd;
+                transition: 0.2s;
+            }
+
+                .star-rating .star.active {
+                    color: var(--navy);
+                }
+
+                .star-rating .star i {
+                    color: inherit;
+                }
+
+                .star-rating .star:hover {
+                    transform: scale(1.2);
+                }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+            .form-group label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+
+                .form-group label i {
+                    color: var(--navy);
+                    margin-right: 6px;
+                }
+
+            .form-group input, .form-group textarea {
+                width: 100%;
+                padding: 12px 16px;
+                border: 2px solid #e0e0e0;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-family: inherit;
+            }
+
+                .form-group input:focus, .form-group textarea:focus {
+                    border-color: var(--gold);
+                    outline: none;
+                }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast-item {
+            background: #fff;
+            padding: 14px 22px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid var(--gold);
+            max-width: 400px;
+        }
+
+            .toast-item.success {
+                border-left-color: #27ae60;
+            }
+
+            .toast-item.error {
+                border-left-color: #e74c3c;
+            }
+
+        footer {
+            background: #111b27;
+            color: #ccc;
+            padding: 45px 0 20px;
+            margin-top: 40px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 35px;
+            padding-bottom: 30px;
+        }
+
+        footer h3, footer h4 {
+            color: white;
+            margin-bottom: 14px;
+        }
+
+        footer p {
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        footer a {
+            color: #bbb;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+            footer a:hover {
+                color: var(--gold);
+            }
+
+        .footer-bottom {
+            text-align: center;
+            border-top: 1px solid #34404c;
+            padding-top: 20px;
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        @media (max-width:900px) {
+            .hamburger {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+                padding: 15px 0 20px;
+            }
+
+                .nav-links.open {
+                    display: flex;
+                }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-inner">
+            <a class="navbar-brand" href="index.html"><i class="fa-solid fa-screwdriver-wrench"></i> Mzansi Auto Repairs</a>
+            <button class="hamburger" id="menuButton" type="button" aria-label="Open navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+            <div class="nav-links" id="navLinks">
+                <a href="index.html">Home</a>
+                <a href="services.html">Services</a>
+                <a href="about.html">About</a>
+                <a href="reviews.html" class="active">Reviews & Ratings</a>
+                <a href="contact.html">Contact</a>
+                <a href="dashboard.html" id="dashboardNav" style="display:none;">Dashboard</a>
+                <a href="login.html" id="loginNav">Login</a>
+                <a href="#" id="logoutNav" style="display:none;">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <section class="page-header">
+        <div class="container">
+            <h1><i class="fa-solid fa-star" style="color:white;"></i> Customer Reviews</h1>
+            <p>What our customers say about us</p>
+        </div>
+    </section>
+
+    <section class="container">
+        <div class="rating-summary" id="ratingSummary">
+            <div class="big-rating" id="avgRating">4.9</div>
+            <div class="stars-big" id="avgStars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+            <p style="color:#6c757d;">Based on <span id="reviewCount">0</span> reviews</p>
+        </div>
+
+        <div class="write-review-section">
+            <h3><i class="fa-solid fa-pen-to-square"></i> Write a Review</h3>
+            <div id="reviewAuthMessage" style="background:#fff3cd;padding:15px;border-radius:8px;margin-bottom:15px;display:none;">
+                Please <a href="login.html" style="color:var(--navy);font-weight:600; display:inline;">login</a> to write a review.
+            </div>
+            <form id="reviewForm" onsubmit="submitReview(event)" style="display:none;">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-user"></i> Your Name</label>
+                    <input type="text" id="reviewName" placeholder="Enter your name" required />
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-star"></i> Rating</label>
+                    <div class="star-rating" id="starRating">
+                        <span class="star" data-value="1"><i class="fa-solid fa-star"></i></span>
+                        <span class="star" data-value="2"><i class="fa-solid fa-star"></i></span>
+                        <span class="star" data-value="3"><i class="fa-solid fa-star"></i></span>
+                        <span class="star" data-value="4"><i class="fa-solid fa-star"></i></span>
+                        <span class="star" data-value="5"><i class="fa-solid fa-star"></i></span>
+                    </div>
+                    <input type="hidden" id="reviewRating" value="5" />
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-comment"></i> Your Review</label>
+                    <textarea id="reviewComment" placeholder="Share your experience with us..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Submit Review</button>
+            </form>
+        </div>
+
+        <h2 style="color:var(--navy);margin-top:20px;"> All Reviews</h2>
+        <div class="review-grid" id="reviewsList"></div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <h3><i class="fa-solid fa-screwdriver-wrench"></i> Mzansi Auto Repairs</h3>
+                    <p>Your trusted auto repair partner in Sandton.</p>
+                </div>
+                <div>
+                    <h4>Quick Links</h4>
+                    <a href="index.html">Home</a>
+                    <a href="services.html">Services</a>
+                    <a href="about.html">About</a>
+                    <a href="contact.html">Contact</a>
+                    <a href="reviews.html">Reviews</a>
+                </div>
+                <div>
+                    <h4>Contact Info</h4>
+                    <p><i class="fa-solid fa-location-dot"></i> 123 Main Street, Sandton</p>
+                    <p><i class="fa-solid fa-phone"></i> (011) 234-5678</p>
+                    <p><i class="fa-regular fa-envelope"></i> info@mzansiauto.co.za</p>
+                </div>
+            </div>
+            <div class="footer-bottom"><p>&copy; 2026 Mzansi Auto Repairs. All rights reserved.</p></div>
+        </div>
+    </footer>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCxmekWI5XBPMwCfSdTZso6hTZSgZpZQLo",
+            authDomain: "mzansiautorepairs-780ef.firebaseapp.com",
+            projectId: "mzansiautorepairs-780ef",
+            storageBucket: "mzansiautorepairs-780ef.firebasestorage.app",
+            messagingSenderId: "157253497706",
+            appId: "1:157253497706:web:81f60557a9d96365922b13"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        let currentUser = null;
+        let selectedRating = 5;
+
+        function showToast(msg, type = 'info') {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `toast-item ${type}`;
+            t.innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--navy);"></i><span>${msg}</span>`;
+            c.appendChild(t);
+            setTimeout(() => t.remove(), 4000);
+        }
+
+        const menuButton = document.getElementById("menuButton");
+        const navLinks = document.getElementById("navLinks");
+        menuButton.addEventListener("click", () => {
+            const isOpen = navLinks.classList.toggle("open");
+            menuButton.setAttribute("aria-expanded", String(isOpen));
+            menuButton.innerHTML = isOpen ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-bars"></i>';
+        });
+
+        function updateNav(user) {
+            document.getElementById('loginNav').style.display = user ? 'none' : 'inline-block';
+            document.getElementById('logoutNav').style.display = user ? 'inline-block' : 'none';
+            document.getElementById('dashboardNav').style.display = user ? 'inline-block' : 'none';
+            currentUser = user;
+            const form = document.getElementById('reviewForm');
+            const authMsg = document.getElementById('reviewAuthMessage');
+            if (user) {
+                form.style.display = 'block'; authMsg.style.display = 'none';
+                if (user.displayName) document.getElementById('reviewName').value = user.displayName;
+            } else {
+                form.style.display = 'none'; authMsg.style.display = 'block';
+            }
+        }
+        auth.onAuthStateChanged(user => { updateNav(user); });
+
+        // STAR RATING - NAVY
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', function () {
+                selectedRating = parseInt(this.dataset.value);
+                document.querySelectorAll('.star').forEach(s => {
+                    s.classList.toggle('active', parseInt(s.dataset.value) <= selectedRating);
+                });
+                document.getElementById('reviewRating').value = selectedRating;
+            });
+        });
+        document.querySelectorAll('.star').forEach(s => { s.classList.toggle('active', parseInt(s.dataset.value) <= 5); });
+
+        async function submitReview(event) {
+            event.preventDefault();
+            if (!currentUser) { showToast('Please login to submit a review.', 'error'); return; }
+            const name = document.getElementById('reviewName').value.trim();
+            const comment = document.getElementById('reviewComment').value.trim();
+            const rating = parseInt(document.getElementById('reviewRating').value);
+            if (!name || !comment) { showToast('Please fill in all fields.', 'error'); return; }
+            try {
+                await db.collection('reviews').add({ userId: currentUser.uid, userName: name, rating: rating, comment: comment, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                showToast('Review submitted successfully!', 'success');
+                document.getElementById('reviewComment').value = '';
+                loadReviews();
+            } catch (error) { showToast(error.message, 'error'); }
+        }
+
+        async function seedReviews() {
+            const snap = await db.collection('reviews').get();
+            if (snap.empty) {
+                const defaultReviews = [
+                    { userName: 'Thabo Mokoena', rating: 5, comment: 'Excellent service! My car has never run better. Highly recommended!', timestamp: firebase.firestore.FieldValue.serverTimestamp() },
+                    { userName: 'Sarah Ndlovu', rating: 5, comment: 'Professional and trustworthy. They fixed my car quickly and at a fair price.', timestamp: firebase.firestore.FieldValue.serverTimestamp() },
+                    { userName: 'Peter van der Merwe', rating: 4, comment: 'Great service, friendly staff. My brakes feel brand new.', timestamp: firebase.firestore.FieldValue.serverTimestamp() },
+                    { userName: 'Lindiwe Zulu', rating: 5, comment: 'Best auto repair shop in Sandton! They went above and beyond.', timestamp: firebase.firestore.FieldValue.serverTimestamp() },
+                    { userName: 'Michael Brown', rating: 4, comment: 'Good work, reasonable prices. My car runs smoothly again.', timestamp: firebase.firestore.FieldValue.serverTimestamp() }
+                ];
+                const batch = db.batch();
+                defaultReviews.forEach(r => { const ref = db.collection('reviews').doc(); batch.set(ref, r); });
+                await batch.commit();
+            }
+        }
+
+        async function loadReviews() {
+            const container = document.getElementById('reviewsList');
+            try {
+                await seedReviews();
+                const snapshot = await db.collection('reviews').orderBy('timestamp', 'desc').get();
+                if (snapshot.empty) {
+                    container.innerHTML = '<p class="text-muted">No reviews yet. Be the first to review!</p>'; return;
+                }
+                let total = 0; let html = '';
+                snapshot.forEach(doc => {
+                    const r = doc.data(); total += r.rating || 5;
+                    const date = r.timestamp ? new Date(r.timestamp.toDate()).toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Recent';
+                    let starsHtml = '';
+                    for (let i = 0; i < (r.rating || 5); i++) { starsHtml += '<i class="fa-solid fa-star"></i>'; }
+                    html += `<div class="review-card"><div style="display:flex;justify-content:space-between;"><div><div class="reviewer">${r.userName || 'Anonymous'}</div><div class="stars">${starsHtml}</div></div><div class="date">${date}</div></div><div class="comment">"${r.comment}"</div></div>`;
+                });
+                container.innerHTML = html;
+                const avg = (total / snapshot.size).toFixed(1);
+                document.getElementById('reviewCount').textContent = snapshot.size;
+                document.getElementById('avgRating').textContent = avg;
+                let avgStarsHtml = '';
+                for (let i = 0; i < Math.round(avg); i++) { avgStarsHtml += '<i class="fa-solid fa-star"></i>'; }
+                document.getElementById('avgStars').innerHTML = avgStarsHtml;
+            } catch (error) {
+                container.innerHTML = '<p>Error loading reviews</p>';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', loadReviews);
+    </script>
+</body>
+</html>

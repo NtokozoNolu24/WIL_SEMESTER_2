@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | Mzansi Auto Repairs</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+background:linear-gradient(rgba(11,29,46,.85),rgba(11,29,46,.85)),url('images/workshop.jpg') center/cover}
+.card{background:#fff;border-radius:18px;padding:34px;width:100%;max-width:420px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+h1{color:#0b1d2e;font-size:1.5rem;margin-bottom:4px}.sub{color:#6c757d;margin-bottom:20px;font-size:.92rem}
+.tabs{display:flex;background:#eef3f8;border-radius:30px;margin-bottom:20px}
+.tabs button{flex:1;padding:10px;border:0;background:none;border-radius:30px;font-weight:700;cursor:pointer;color:#1a3a5c}
+.tabs button.on{background:#d4a843;color:#0b1d2e}
+input{width:100%;padding:12px;margin-bottom:12px;border:1px solid #cfd8e3;border-radius:8px;font-size:.95rem}
+.go{width:100%;padding:13px;border:0;border-radius:30px;background:#d4a843;color:#0b1d2e;font-weight:700;font-size:1rem;cursor:pointer}
+#msg{margin-top:12px;font-size:.9rem;color:#c0392b;min-height:20px}.back{display:block;text-align:center;margin-top:14px;color:#1a3a5c;font-size:.9rem}
+#nameBox{display:none}
+</style></head><body>
+<div class="card">
+<h1><i class="fa-solid fa-screwdriver-wrench" style="color:#d4a843"></i> Mzansi Auto Repairs</h1>
+<p class="sub">Log in to leave reviews and manage your account.</p>
+<div class="tabs"><button id="tLogin" class="on" type="button">Login</button><button id="tReg" type="button">Register</button></div>
+<div id="nameBox"><input id="fullName" placeholder="Full name"></div>
+<input id="email" type="email" placeholder="Email address">
+<input id="password" type="password" placeholder="Password (min 6 characters)">
+<button class="go" id="go" type="button">Login</button>
+<div id="msg"></div>
+<a class="back" href="index.html">&larr; Back to website</a>
+</div>
+<script src="js/firebase-init.js"></script>
+<script>
+let mode='login';
+const $=id=>document.getElementById(id);
+function setMode(m){mode=m;$('tLogin').classList.toggle('on',m==='login');$('tReg').classList.toggle('on',m==='register');
+ $('nameBox').style.display=m==='register'?'block':'none';$('go').textContent=m==='login'?'Login':'Create account';$('msg').textContent='';}
+$('tLogin').onclick=()=>setMode('login');$('tReg').onclick=()=>setMode('register');
+$('go').onclick=async()=>{
+ const email=$('email').value.trim(),pw=$('password').value;$('msg').textContent='';
+ try{
+  if(mode==='register'){
+   const name=$('fullName').value.trim();if(!name){$('msg').textContent='Please enter your name.';return;}
+   const c=await auth.createUserWithEmailAndPassword(email,pw);
+   await c.user.updateProfile({displayName:name});
+   await db.collection('users').doc(c.user.uid).set({uid:c.user.uid,fullName:name,email,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  }else{await auth.signInWithEmailAndPassword(email,pw);}
+  location.href='dashboard.html';
+ }catch(e){$('msg').textContent=e.message.replace('Firebase: ','');}
+};
+</script></body></html>
