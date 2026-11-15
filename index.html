@@ -1,0 +1,1069 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Home | Mzansi Auto Repairs</title>
+    <meta name="description" content="Professional vehicle repair and maintenance services in Sandton, South Africa.">
+
+    <!-- FONT AWESOME -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #0b1d2e;
+            --blue: #1a3a5c;
+            --gold: #d4a843;
+            --light: #f4f6f9;
+            --text: #1e2a3a;
+            --muted: #6c757d;
+            --white: #ffffff;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: var(--light);
+            color: var(--text);
+            line-height: 1.6;
+            padding-top: 72px;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        button {
+            font-family: inherit;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 0 22px;
+        }
+
+        /* NAVIGATION */
+
+        .navbar {
+            background: linear-gradient(135deg, var(--navy), var(--blue));
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-inner {
+            min-height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--white);
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+            .navbar-brand i {
+                color: var(--gold);
+                font-size: 1.5rem;
+            }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+            .nav-links a {
+                color: white;
+                padding: 9px 12px;
+                border-radius: 7px;
+                font-size: 0.9rem;
+                transition: 0.2s;
+            }
+
+                .nav-links a:hover,
+                .nav-links a.active {
+                    background: var(--gold);
+                    color: var(--navy);
+                }
+
+            .nav-links .login-btn {
+                background: var(--gold);
+                color: var(--navy);
+                font-weight: 700;
+                border-radius: 25px;
+                padding: 9px 18px;
+            }
+
+            .nav-links .logout-btn {
+                background: #c0392b;
+                color: white;
+                border-radius: 25px;
+                padding: 9px 18px;
+            }
+
+        .hamburger {
+            display: none;
+            background: none;
+            color: white;
+            border: none;
+            font-size: 1.6rem;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        /* HERO SECTION */
+
+        .hero {
+            background: linear-gradient(120deg, #0b1d2e, #1a3a5c);
+            color: white;
+            padding: 100px 0;
+        }
+
+        .hero-content {
+            max-width: 760px;
+        }
+
+        .hero-label {
+            display: inline-block;
+            color: var(--gold);
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 0.82rem;
+            margin-bottom: 18px;
+        }
+
+            .hero-label i {
+                color: var(--navy);
+                margin-right: 7px;
+            }
+
+        .hero h1 {
+            font-size: clamp(2.3rem, 5vw, 4rem);
+            line-height: 1.15;
+            margin-bottom: 22px;
+        }
+
+            .hero h1 span {
+                color: var(--gold);
+            }
+
+        .hero p {
+            color: #e0e7ef;
+            font-size: 1.08rem;
+            max-width: 620px;
+            margin-bottom: 30px;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        /* BUTTONS */
+
+        .btn {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 9px;
+            padding: 13px 24px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: var(--navy);
+        }
+
+            .btn-primary:hover {
+                background: #e8c86a;
+                transform: translateY(-2px);
+            }
+
+        .btn-outline {
+            border-color: rgba(255, 255, 255, 0.65);
+            color: white;
+        }
+
+            .btn-outline:hover {
+                background: white;
+                color: var(--navy);
+            }
+
+        /* NAVY FONT AWESOME ICONS */
+
+        .btn i {
+            color: var(--navy);
+        }
+
+        .navbar-brand i {
+            color: var(--navy);
+        }
+
+        .trust-item i,
+        .service-icon i,
+        .about-visual i,
+        .stars i,
+        footer h3 i,
+        footer p i {
+            color: var(--navy);
+        }
+
+        /* TRUST STRIP */
+
+        .trust-strip {
+            background: white;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 25px 0;
+        }
+
+        .trust-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-align: left;
+        }
+
+            .trust-item i {
+                font-size: 1.7rem;
+            }
+
+            .trust-item strong {
+                display: block;
+                color: var(--navy);
+            }
+
+            .trust-item small {
+                color: var(--muted);
+            }
+
+        /* GENERAL SECTIONS */
+
+        section.content-section {
+            padding: 75px 0;
+        }
+
+        .section-heading {
+            text-align: center;
+            max-width: 680px;
+            margin: 0 auto 40px;
+        }
+
+            .section-heading .eyebrow {
+                color: #9b741b;
+                text-transform: uppercase;
+                font-size: 0.8rem;
+                letter-spacing: 2px;
+                font-weight: 700;
+            }
+
+            .section-heading h2 {
+                color: var(--navy);
+                font-size: clamp(1.8rem, 3vw, 2.5rem);
+                margin: 8px 0 12px;
+            }
+
+            .section-heading p {
+                color: var(--muted);
+            }
+
+        /* SERVICE PREVIEW */
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
+        }
+
+        .service-card {
+            background: white;
+            padding: 30px 24px;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            border-bottom: 4px solid transparent;
+            transition: 0.25s;
+        }
+
+            .service-card:hover {
+                transform: translateY(-5px);
+                border-bottom-color: var(--gold);
+                box-shadow: 0 12px 30px rgba(0, 0, 0, 0.09);
+            }
+
+        .service-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #eef3f8;
+            border-radius: 50%;
+            margin-bottom: 18px;
+            font-size: 1.5rem;
+        }
+
+        .service-card h3 {
+            color: var(--blue);
+            margin-bottom: 10px;
+            font-size: 1.15rem;
+        }
+
+        .service-card p {
+            color: var(--muted);
+            font-size: 0.94rem;
+        }
+
+        .section-action {
+            text-align: center;
+            margin-top: 35px;
+        }
+
+        /* ABOUT PREVIEW */
+
+        .about-section {
+            background: white;
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 55px;
+            align-items: center;
+        }
+
+        .about-visual {
+            min-height: 310px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #eef3f8, #dce6f0);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+            .about-visual i {
+                font-size: 4rem;
+                margin-bottom: 20px;
+            }
+
+            .about-visual h3 {
+                font-size: 1.6rem;
+                color: var(--navy);
+            }
+
+            .about-visual p {
+                color: var(--muted);
+            }
+
+        .about-copy .eyebrow {
+            color: #9b741b;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+        }
+
+        .about-copy h2 {
+            font-size: 2.2rem;
+            line-height: 1.2;
+            color: var(--navy);
+            margin: 10px 0 18px;
+        }
+
+        .about-copy p {
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        /* REVIEWS PREVIEW */
+
+        .reviews-section {
+            background: var(--light);
+        }
+
+        .review-preview {
+            max-width: 760px;
+            margin: auto;
+            background: white;
+            border-radius: 18px;
+            padding: 35px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .stars {
+            font-size: 1.4rem;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+        }
+
+        .review-preview h3 {
+            color: var(--navy);
+            margin-bottom: 10px;
+        }
+
+        .review-preview p {
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        .rating-note {
+            font-size: 0.83rem;
+            color: var(--muted);
+            margin-top: 15px;
+        }
+
+        /* CONTACT CALL TO ACTION */
+
+        .cta-section {
+            background: linear-gradient(135deg, var(--navy), var(--blue));
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+            .cta-section h2 {
+                font-size: clamp(1.8rem, 3vw, 2.5rem);
+                margin-bottom: 12px;
+            }
+
+            .cta-section p {
+                color: #e0e7ef;
+                margin-bottom: 25px;
+            }
+
+        /* FOOTER */
+
+        footer {
+            background: #111b27;
+            color: #ccc;
+            padding: 45px 0 20px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 35px;
+            padding-bottom: 30px;
+        }
+
+        footer h3,
+        footer h4 {
+            color: white;
+            margin-bottom: 14px;
+        }
+
+        footer p {
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        footer a {
+            color: #bbb;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+            footer a:hover {
+                color: var(--gold);
+            }
+
+        .footer-bottom {
+            text-align: center;
+            border-top: 1px solid #34404c;
+            padding-top: 20px;
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        /* NOTIFICATIONS */
+
+        .toast-container {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 3000;
+        }
+
+        .toast {
+            background: white;
+            padding: 14px 20px;
+            margin-top: 10px;
+            border-left: 4px solid var(--gold);
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* RESPONSIVE DESIGN */
+
+        @media (max-width: 900px) {
+            .hamburger {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+                padding: 15px 0 20px;
+            }
+
+                .nav-links.open {
+                    display: flex;
+                }
+
+                .nav-links a {
+                    display: block;
+                }
+
+            .service-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .about-grid {
+                gap: 30px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero {
+                padding: 70px 0;
+            }
+
+            .trust-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .trust-item {
+                justify-content: flex-start;
+            }
+
+            section.content-section {
+                padding: 55px 0;
+            }
+
+            .service-grid,
+            .about-grid,
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .about-visual {
+                min-height: 230px;
+            }
+
+            .about-copy h2 {
+                font-size: 1.8rem;
+            }
+
+            .review-preview {
+                padding: 25px 18px;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVIGATION -->
+    <nav class="navbar">
+        <div class="container nav-inner">
+
+            <a class="navbar-brand" href="index.html">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+                <span>Mzansi Auto Repairs</span>
+            </a>
+
+            <button class="hamburger" id="menuButton"
+                    type="button"
+                    aria-label="Open navigation"
+                    aria-expanded="false">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <div class="nav-links" id="navLinks">
+                <a href="index.html" class="active">Home</a>
+                <a href="services.html">Services</a>
+                <a href="about.html">About</a>
+                <a href="reviews.html">Reviews &amp; Ratings</a>
+                <a href="contact.html">Contact</a>
+
+                <a href="dashboard.html"
+                   id="dashboardNav"
+                   style="display:none;">Dashboard</a>
+
+
+
+
+            </div>
+
+        </div>
+    </nav>
+
+    <div class="toast-container"
+         id="toastContainer"
+         aria-live="polite"></div>
+
+    <!-- HERO SECTION -->
+    <header class="hero">
+        <div class="container">
+            <div class="hero-content">
+
+                <span class="hero-label">
+                    <i class="fa-solid fa-car-side"></i>
+                    Reliable Automotive Care
+                </span>
+
+                <h1>
+                    Keeping You Moving with
+                    <span>Quality Auto Repairs</span>
+                </h1>
+
+                <p>
+                    Welcome to Mzansi Auto Repairs. We help keep your
+                    vehicle running smoothly with professional repair,
+                    maintenance and diagnostic services.
+                </p>
+
+                <div class="hero-actions">
+                    <a href="services.html" class="btn btn-primary">
+                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                        Explore Our Services
+                    </a>
+
+                    <a href="contact.html" class="btn btn-outline">
+                        <i class="fa-solid fa-phone"></i>
+                        Contact Us
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- TRUST FEATURES -->
+    <div class="trust-strip">
+        <div class="container trust-grid">
+
+            <div class="trust-item">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+                <div>
+                    <strong>Professional Repairs</strong>
+                    <small>Care for your vehicle</small>
+                </div>
+            </div>
+
+            <div class="trust-item">
+                <i class="fa-solid fa-car-side"></i>
+                <div>
+                    <strong>Vehicle Maintenance</strong>
+                    <small>Support for your car</small>
+                </div>
+            </div>
+
+            <div class="trust-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                <div>
+                    <strong>Service Bookings</strong>
+                    <small>Request an appointment</small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SERVICES PREVIEW -->
+    <section class="content-section">
+        <div class="container">
+
+            <div class="section-heading">
+                <span class="eyebrow">What We Do</span>
+                <h2>Our Popular Services</h2>
+                <p>
+                    From routine maintenance to diagnosing vehicle
+                    problems, explore how we can help.
+                </p>
+            </div>
+
+            <div class="service-grid">
+
+                <article class="service-card">
+                    <div class="service-icon">
+                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                    </div>
+                    <h3>Engine Diagnostics</h3>
+                    <p>
+                        Identify engine problems and find the right
+                        repair solution.
+                    </p>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-icon">
+                        <i class="fa-solid fa-car-side"></i>
+                    </div>
+                    <h3>Brake Services</h3>
+                    <p>
+                        Keep your braking system in good condition
+                        with inspections and repairs.
+                    </p>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-icon">
+                        <i class="fa-solid fa-oil-can"></i>
+                    </div>
+                    <h3>Oil Change &amp; Maintenance</h3>
+                    <p>
+                        Help protect your engine through routine
+                        oil changes and maintenance.
+                    </p>
+                </article>
+
+            </div>
+
+            <div class="section-action">
+                <a href="services.html" class="btn btn-primary">
+                    View All Services
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ABOUT PREVIEW -->
+    <section class="content-section about-section">
+        <div class="container about-grid">
+
+            <div class="about-visual">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+                <h3>Mzansi Auto Repairs</h3>
+                <p>Your vehicle deserves proper care.</p>
+            </div>
+
+            <div class="about-copy">
+                <span class="eyebrow">About Our Business</span>
+
+                <h2>Committed to Keeping Your Vehicle on the Road</h2>
+
+                <p>
+                    At Mzansi Auto Repairs, our goal is to provide
+                    dependable automotive repair and maintenance
+                    services while helping customers understand
+                    their vehicle's needs.
+                </p>
+
+                <p>
+                    Discover more about our business, our approach
+                    and the services we offer.
+                </p>
+
+                <a href="about.html" class="btn btn-primary">
+                    Learn More About Us
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- REVIEWS AND RATINGS PREVIEW -->
+    <section class="content-section reviews-section">
+        <div class="container">
+
+            <div class="section-heading">
+                <span class="eyebrow">Customer Feedback</span>
+                <h2>Reviews &amp; Ratings</h2>
+                <p>
+                    Customer feedback helps people learn more about
+                    the service experience.
+                </p>
+            </div>
+
+            <div class="review-preview">
+
+                <div class="stars" aria-label="Rating stars">
+                    <i class="fa-regular fa-star"></i>
+                    <i class="fa-regular fa-star"></i>
+                    <i class="fa-regular fa-star"></i>
+                    <i class="fa-regular fa-star"></i>
+                    <i class="fa-regular fa-star"></i>
+                </div>
+
+                <h3>We Value Your Feedback</h3>
+
+                <p>
+                    Visit our reviews page to explore customer
+                    feedback and share your own experience.
+                </p>
+
+                <a href="reviews.html" class="btn btn-primary">
+                    View Reviews &amp; Ratings
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+
+                <p class="rating-note">
+                    The stars are placeholders and do not represent
+                    an actual business rating.
+                </p>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- CONTACT CALL TO ACTION -->
+    <section class="cta-section">
+        <div class="container">
+
+            <h2>Need Help with Your Vehicle?</h2>
+
+            <p>
+                Get in touch with Mzansi Auto Repairs to enquire
+                about our services or request assistance.
+            </p>
+
+            <a href="contact.html" class="btn btn-primary">
+                Contact Us Today
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+
+            <div class="footer-grid">
+
+                <div>
+                    <h3>
+                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                        Mzansi Auto Repairs
+                    </h3>
+
+                    <p>
+                        Automotive repair and maintenance services
+                        in Sandton.
+                    </p>
+                </div>
+
+                <div>
+                    <h4>Quick Links</h4>
+                    <a href="index.html">Home</a>
+                    <a href="services.html">Services</a>
+                    <a href="about.html">About</a>
+                    <a href="reviews.html">Reviews &amp; Ratings</a>
+                    <a href="contact.html">Contact</a>
+
+                </div>
+
+                <div>
+                    <h4>Contact Information</h4>
+
+                    <p>
+                        <i class="fa-solid fa-location-dot"></i>
+                        Sandton, South Africa
+                    </p>
+
+                    <p>
+                        <i class="fa-solid fa-phone"></i>
+                        (011) 234-5678
+                    </p>
+
+                    <p>
+                        <i class="fa-regular fa-envelope"></i>
+                        info@mzansiauto.co.za
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="footer-bottom">
+                <p>
+                    &copy; <span id="currentYear"></span>
+                    Mzansi Auto Repairs. All rights reserved.
+                </p>
+            </div>
+
+        </div>
+    </footer>
+
+    <script>
+        // FIREBASE CONFIGURATION
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCxmekWI5XBPMwCfSdTZso6hTZSgZpZQLo",
+            authDomain: "mzansiautorepairs-780ef.firebaseapp.com",
+            projectId: "mzansiautorepairs-780ef",
+            storageBucket: "mzansiautorepairs-780ef.firebasestorage.app",
+            messagingSenderId: "157253497706",
+            appId: "1:157253497706:web:81f60557a9d96365922b13"
+        };
+
+        // INITIALISE FIREBASE
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const auth = firebase.auth();
+
+        // NOTIFICATIONS
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+
+            toast.className = "toast";
+            toast.textContent = message;
+
+            if (type === "error") {
+                toast.style.borderLeftColor = "#c0392b";
+            }
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        // MOBILE NAVIGATION
+
+        const menuButton = document.getElementById("menuButton");
+        const navLinks = document.getElementById("navLinks");
+
+        menuButton.addEventListener("click", () => {
+            const isOpen = navLinks.classList.toggle("open");
+
+            menuButton.setAttribute("aria-expanded", String(isOpen));
+            menuButton.setAttribute(
+                "aria-label",
+                isOpen ? "Close navigation" : "Open navigation"
+            );
+
+            menuButton.innerHTML = isOpen
+                ? '<i class="fa-solid fa-xmark"></i>'
+                : '<i class="fa-solid fa-bars"></i>';
+        });
+
+        // CLOSE MOBILE MENU AFTER SELECTING A PAGE
+
+        navLinks.querySelectorAll("a").forEach(link => {
+            link.addEventListener("click", () => {
+                navLinks.classList.remove("open");
+                menuButton.setAttribute("aria-expanded", "false");
+                menuButton.setAttribute("aria-label", "Open navigation");
+                menuButton.innerHTML = '<i class="fa-solid fa-bars"></i>';
+            });
+        });
+
+        // LOGIN AND LOGOUT NAVIGATION
+
+        auth.onAuthStateChanged(user => {
+            document.getElementById("loginNav").style.display =
+                user ? "none" : "inline-block";
+
+            document.getElementById("logoutNav").style.display =
+                user ? "inline-block" : "none";
+
+            document.getElementById("dashboardNav").style.display =
+                user ? "inline-block" : "none";
+        });
+
+        // LOG OUT
+
+        document.getElementById("logoutNav").addEventListener(
+            "click",
+            async event => {
+                event.preventDefault();
+
+                if (!confirm("Are you sure you want to log out?")) {
+                    return;
+                }
+
+                try {
+                    await auth.signOut();
+
+                    showToast("You have been logged out.");
+
+                    setTimeout(() => {
+                        window.location.href = "index.html";
+                    }, 500);
+
+                } catch (error) {
+                    console.error("Logout error:", error);
+                    showToast(
+                        "Unable to log out. Please try again.",
+                        "error"
+                    );
+                }
+            }
+        );
+
+        // FOOTER YEAR
+
+        document.getElementById("currentYear").textContent =
+            new Date().getFullYear();
+    </script>
+
+</body>
+</html>
+
+
+```
