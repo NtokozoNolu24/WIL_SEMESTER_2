@@ -25,6 +25,7 @@ private val KEY_USER_ID = stringPreferencesKey("user_id")
 
 sealed class AuthResult {
     data class Success(val user: UserEntity) : AuthResult()
+    data class PendingApproval(val message: String) : AuthResult()
     data class Error(val message: String) : AuthResult()
 }
 
@@ -200,9 +201,8 @@ class AuthRepository(private val context: Context) {
 
             firebaseAuth.signOut()
 
-            AuthResult.Error(
-                "Google registration submitted successfully. " +
-                        "Your account is awaiting administrator approval."
+            AuthResult.PendingApproval(
+                "Registration submitted successfully. Your account is awaiting administrator approval. You can sign in once your account has been approved."
             )
 
         } catch (e: Exception) {

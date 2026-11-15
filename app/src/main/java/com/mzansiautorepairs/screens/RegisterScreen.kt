@@ -1,3 +1,4 @@
+
 package com.mzansiautorepairs.screens
 
 import androidx.compose.foundation.layout.*
@@ -25,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.mzansiautorepairs.Routes
-import com.mzansiautorepairs.UserRole
 import com.mzansiautorepairs.auth.AuthRepository
 import com.mzansiautorepairs.auth.AuthResult
 import com.mzansiautorepairs.components.MzansiTopBar
@@ -51,6 +51,7 @@ fun RegisterScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    var registrationSubmitted by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -116,7 +117,7 @@ fun RegisterScreen(
                 },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading && !registrationSubmitted
             )
 
             Spacer(Modifier.height(12.dp))
@@ -136,7 +137,7 @@ fun RegisterScreen(
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading && !registrationSubmitted
             )
 
             Spacer(Modifier.height(12.dp))
@@ -156,7 +157,7 @@ fun RegisterScreen(
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading && !registrationSubmitted
             )
 
             Spacer(Modifier.height(12.dp))
@@ -173,6 +174,7 @@ fun RegisterScreen(
                 },
                 trailingIcon = {
                     IconButton(
+                        enabled = !registrationSubmitted,
                         onClick = {
                             passwordVisible = !passwordVisible
                         }
@@ -195,7 +197,7 @@ fun RegisterScreen(
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading && !registrationSubmitted
             )
 
             Spacer(Modifier.height(12.dp))
@@ -212,6 +214,7 @@ fun RegisterScreen(
                 },
                 trailingIcon = {
                     IconButton(
+                        enabled = !registrationSubmitted,
                         onClick = {
                             confirmPasswordVisible =
                                 !confirmPasswordVisible
@@ -235,11 +238,12 @@ fun RegisterScreen(
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading && !registrationSubmitted
             )
 
             errorMessage?.let {
                 Spacer(Modifier.height(12.dp))
+
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
@@ -248,10 +252,12 @@ fun RegisterScreen(
             }
 
             successMessage?.let {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(16.dp))
+
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -259,22 +265,24 @@ fun RegisterScreen(
             Spacer(Modifier.height(24.dp))
 
             Button(
-                enabled = !isLoading,
+                enabled = !isLoading && !registrationSubmitted,
                 onClick = {
                     errorMessage = null
                     successMessage = null
 
+                    val cleanName = fullName.trim()
                     val cleanEmail = email.trim().lowercase()
+                    val cleanPhone = phone.trim()
 
                     when {
-                        fullName.isBlank() ->
+                        cleanName.isBlank() ->
                             errorMessage = "Enter your full name."
 
                         !android.util.Patterns.EMAIL_ADDRESS
                             .matcher(cleanEmail).matches() ->
                             errorMessage = "Enter a valid email address."
 
-                        phone.filter { it.isDigit() }.length < 10 ->
+                        cleanPhone.filter { it.isDigit() }.length < 10 ->
                             errorMessage = "Enter a valid phone number."
 
                         password.length < 8 ->
@@ -292,25 +300,19 @@ fun RegisterScreen(
 
                             scope.launch {
                                 try {
-                                    /*
-                                     * The registration repository must create
-                                     * a Firebase account and save a PENDING
-                                     * profile. The role must be assigned by
-                                     * an authorised administrator.
-                                     */
                                     val result = authRepository.register(
-                                        fullName = fullName.trim(),
+                                        fullName = cleanName,
                                         email = cleanEmail,
-                                        phone = phone.trim(),
+                                        phone = cleanPhone,
                                         password = password,
                                         confirmPassword = confirmPassword,
-                                        role = UserRole.RECEPTIONIST
+                                        role = com.mzansiautorepairs.UserRole.RECEPTIONIST
                                     )
 
                                     when (result) {
-                                        is AuthResult.Success -> {
-                                            successMessage =
-                                                "Registration submitted. Your account requires administrator approval."
+                                        is AuthResult.PendingApproval -> {
+                                            successMessage = result.message
+                                            registrationSubmitted = true
 
                                             fullName = ""
                                             email = ""
@@ -319,13 +321,19 @@ fun RegisterScreen(
                                             confirmPassword = ""
                                         }
 
+                                        is AuthResult.Success -> {
+                                            successMessage =
+                                                "Your registration has been completed. Please sign in."
+                                            registrationSubmitted = true
+                                        }
+
                                         is AuthResult.Error -> {
                                             errorMessage = result.message
                                         }
                                     }
                                 } catch (e: Exception) {
                                     errorMessage =
-                                        "Registration failed. Please try again."
+                                        "Registration failed. Please check your connection and try again."
                                 } finally {
                                     isLoading = false
                                 }
@@ -348,7 +356,10 @@ fun RegisterScreen(
                     )
                 } else {
                     Text(
-                        text = "Submit Registration",
+                        text = if (registrationSubmitted)
+                            "Registration Submitted"
+                        else
+                            "Submit Registration",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -380,4 +391,3 @@ fun RegisterScreen(navController: NavController) {
         }
     )
 }
-
