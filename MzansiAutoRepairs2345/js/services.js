@@ -17,7 +17,7 @@ async function loadServices() {
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="mt-3 text-muted">🔧 Loading services...</p>
+            <p class="mt-3 text-muted"> Loading services...</p>
         </div>
     `;
 
@@ -44,14 +44,14 @@ async function loadServices() {
                         <p class="text-muted small">${s.description}</p>
                         <ul class="features list-unstyled small">
                             ${(s.features || []).slice(0, 3).map(f => `<li>${f}</li>`).join('')}
-                            ${(s.features || []).length > 3 ? `<li class="text-muted">➕ ${(s.features || []).length - 3} more</li>` : ''}
+                            ${(s.features || []).length > 3 ? `<li class="text-muted"> ${(s.features || []).length - 3} more</li>` : ''}
                         </ul>
                         <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span class="price">💰 ${formatCurrency(s.price)}</span>
-                            <span class="text-muted small">⏱️ ${s.duration || 60} min</span>
+                            <span class="price"> ${formatCurrency(s.price)}</span>
+                            <span class="text-muted small"> ${s.duration || 60} min</span>
                         </div>
                         <button class="btn btn-warning w-100 mt-2" onclick="openBookingModal('${s.id}')">
-                            📅 Book Now
+                             Book Now
                         </button>
                     </div>
                 </div>
@@ -62,19 +62,19 @@ async function loadServices() {
         console.error('Error loading services:', error);
         container.innerHTML = `
             <div class="col-12 text-center py-5">
-                <div style="font-size:3rem;">🔧</div>
+                <div style="font-size:3rem;"></div>
                 <h3>No services available</h3>
-                <p class="text-muted">Please check back later. ⏳</p>
-                <a href="index.html" class="btn btn-primary mt-3">🏠 Go Home</a>
+                <p class="text-muted">Please check back later. </p>
+                <a href="index.html" class="btn btn-primary mt-3"> Go Home</a>
             </div>
         `;
-        showToast('❌ Error loading services', 'error');
+        showToast(' Error loading services', 'error');
     }
 }
 
 function openBookingModal(serviceId) {
     if (!isLoggedIn()) {
-        showToast('❌ Please login to book a service.', 'error');
+        showToast(' Please login to book a service.', 'error');
         window.location.href = 'login.html';
         return;
     }
@@ -102,14 +102,14 @@ async function bookService(event) {
     const time = form.querySelector('[name="time"]').value;
 
     if (!date || !time) {
-        showToast('❌ Please select both date and time.', 'error');
+        showToast(' Please select both date and time.', 'error');
         return;
     }
 
     try {
         const userId = await getCurrentUserId();
         if (!userId) {
-            showToast('❌ Please login to book.', 'error');
+            showToast(' Please login to book.', 'error');
             return;
         }
 
@@ -124,67 +124,67 @@ async function bookService(event) {
         
         bookModal.hide();
         form.reset();
-        showToast('✅ Service booked successfully! 🎉', 'success');
+        showToast(' Service booked successfully! ', 'success');
     } catch (error) {
-        showToast('❌ ' + error.message, 'error');
+        showToast(' ' + error.message, 'error');
     }
 }
 
 async function seedServices() {
     const defaultServices = [
         {
-            title: '🔧 Engine Diagnostics & Repair',
+            title: ' Engine Diagnostics & Repair',
             description: 'Using advanced diagnostic tools, our certified technicians identify and resolve engine issues quickly and accurately.',
             icon: 'fa-solid fa-engine',
             category: 'Engine',
             price: 750,
             duration: 120,
-            features: ['✅ Computerized engine diagnostics', '✅ Engine tune-ups and optimization', '✅ Timing belt and chain replacement', '✅ Engine rebuilds and replacements']
+            features: [' Computerized engine diagnostics', ' Engine tune-ups and optimization', ' Timing belt and chain replacement', ' Engine rebuilds and replacements']
         },
         {
-            title: '🛑 Brake Service & Repair',
+            title: ' Brake Service & Repair',
             description: 'Your safety is our priority. We provide comprehensive brake inspections, repairs, and replacements.',
             icon: 'fa-solid fa-car-side',
             category: 'Brakes',
             price: 450,
             duration: 90,
-            features: ['✅ Brake pad and rotor replacement', '✅ Brake fluid flush and bleed', '✅ ABS diagnostics and repair', '✅ Brake system inspection']
+            features: [' Brake pad and rotor replacement', ' Brake fluid flush and bleed', ' ABS diagnostics and repair', ' Brake system inspection']
         },
         {
-            title: '🛢️ Oil Change & Maintenance',
+            title: ' Oil Change & Maintenance',
             description: 'Regular maintenance keeps your vehicle running smoothly and extends its lifespan.',
             icon: 'fa-solid fa-oil-can',
             category: 'Maintenance',
             price: 350,
             duration: 45,
-            features: ['✅ Full synthetic and conventional oil changes', '✅ Oil filter replacement', '✅ Fluid level checks and top-ups', '✅ Multi-point vehicle inspection']
+            features: [' Full synthetic and conventional oil changes', ' Oil filter replacement', ' Fluid level checks and top-ups', ' Multi-point vehicle inspection']
         },
         {
-            title: '⚡ Electrical Diagnostics & Repair',
+            title: ' Electrical Diagnostics & Repair',
             description: 'Modern vehicles rely on complex electrical systems. We diagnose and repair electrical issues efficiently.',
             icon: 'fa-solid fa-bolt',
             category: 'Electrical',
             price: 550,
             duration: 90,
-            features: ['✅ Battery testing and replacement', '✅ Alternator and starter repair', '✅ Wiring and fuse diagnostics', '✅ Computer module reprogramming']
+            features: [' Battery testing and replacement', ' Alternator and starter repair', ' Wiring and fuse diagnostics', ' Computer module reprogramming']
         },
         {
-            title: '⚙️ Transmission Service',
+            title: ' Transmission Service',
             description: 'Comprehensive transmission diagnostics, repair, and maintenance to ensure smooth shifting.',
             icon: 'fa-solid fa-gears',
             category: 'Transmission',
             price: 850,
             duration: 180,
-            features: ['✅ Transmission fluid flush', '✅ Transmission rebuilds', '✅ Clutch repair and replacement', '✅ Diagnostic scanning']
+            features: [' Transmission fluid flush', ' Transmission rebuilds', ' Clutch repair and replacement', ' Diagnostic scanning']
         },
         {
-            title: '🚗 Suspension & Steering',
+            title: ' Suspension & Steering',
             description: 'Expert suspension and steering services to ensure your vehicle handles safely.',
             icon: 'fa-solid fa-car',
             category: 'Suspension',
             price: 500,
             duration: 120,
-            features: ['✅ Shock and strut replacement', '✅ Alignment services', '✅ Steering rack repair', '✅ Ball joint and tie rod replacement']
+            features: [' Shock and strut replacement', ' Alignment services', ' Steering rack repair', ' Ball joint and tie rod replacement']
         }
     ];
 
@@ -194,5 +194,5 @@ async function seedServices() {
         batch.set(ref, s);
     });
     await batch.commit();
-    showToast('✅ Services seeded successfully!', 'success');
+    showToast(' Services seeded successfully!', 'success');
 }

@@ -21,9 +21,9 @@ async function loadReviews() {
             document.getElementById('reviewsList').innerHTML = `
                 <div class="col-12">
                     <div class="empty-state">
-                        <div class="icon">⭐</div>
+                        <div class="icon">★</div>
                         <h3>No reviews yet</h3>
-                        <p class="text-muted">Be the first to leave a review! ✍️</p>
+                        <p class="text-muted">Be the first to leave a review! </p>
                     </div>
                 </div>
             `;
@@ -37,7 +37,7 @@ async function loadReviews() {
             const r = doc.data();
             totalRating += r.rating;
             count++;
-            const stars = '⭐'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+            const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
             html += `
                 <div class="col-md-4">
                     <div class="review-card">
@@ -55,7 +55,7 @@ async function loadReviews() {
         });
 
         const avg = count > 0 ? (totalRating / count).toFixed(1) : 0;
-        const avgStars = '⭐'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
+        const avgStars = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
         
         document.getElementById('avgRating').textContent = avg;
         document.getElementById('avgStars').textContent = avgStars;
@@ -64,7 +64,7 @@ async function loadReviews() {
         
     } catch (error) {
         console.error('Error loading reviews:', error);
-        showToast('❌ Error loading reviews', 'error');
+        showToast(' Error loading reviews', 'error');
     }
 }
 
@@ -73,20 +73,20 @@ async function submitReview(event) {
     
     const user = auth.currentUser;
     if (!user) {
-        showToast('❌ Please login to write a review.', 'error');
+        showToast(' Please login to write a review.', 'error');
         window.location.href = 'login.html';
         return;
     }
 
     const ratingInput = document.querySelector('input[name="rating"]:checked');
     if (!ratingInput) {
-        showToast('❌ Please select a rating.', 'error');
+        showToast(' Please select a rating.', 'error');
         return;
     }
 
     const comment = document.getElementById('reviewComment').value.trim();
     if (!comment) {
-        showToast('❌ Please write a comment.', 'error');
+        showToast(' Please write a comment.', 'error');
         return;
     }
 
@@ -110,10 +110,10 @@ async function submitReview(event) {
         const modal = bootstrap.Modal.getInstance(document.getElementById('reviewModal'));
         if (modal) modal.hide();
         
-        showToast('✅ Thank you for your review! ⭐', 'success');
+        showToast(' Thank you for your review! ★', 'success');
         document.getElementById('reviewForm').reset();
         loadReviews();
     } catch (error) {
-        showToast('❌ ' + error.message, 'error');
+        showToast(' ' + error.message, 'error');
     }
 }

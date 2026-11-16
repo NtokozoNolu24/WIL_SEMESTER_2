@@ -22,7 +22,7 @@ async function loadVehicles() {
             container.innerHTML = `
                 <div class="col-12">
                     <div class="empty-state">
-                        <div class="icon">🚗</div>
+                        <div class="icon"></div>
                         <h3>No vehicles registered</h3>
                         <p class="text-muted">Add your first vehicle to get started.</p>
                         <a href="add-vehicle.html" class="btn btn-primary">Add Vehicle</a>
@@ -38,16 +38,16 @@ async function loadVehicles() {
             html += `
                 <div class="col-md-4">
                     <div class="vehicle-card">
-                        <div class="icon">🚗</div>
+                        <div class="icon"></div>
                         <h4>${v.make} ${v.model}</h4>
                         <div class="details">
-                            <span><strong>📅 Year:</strong> ${v.year}</span>
-                            <span><strong>🔢 License:</strong> ${v.licensePlate}</span>
-                            <span><strong>🎨 Color:</strong> ${v.color || 'N/A'}</span>
-                            <span><strong>📊 Mileage:</strong> ${v.mileage || 0} km</span>
+                            <span><strong> Year:</strong> ${v.year}</span>
+                            <span><strong> License:</strong> ${v.licensePlate}</span>
+                            <span><strong> Color:</strong> ${v.color || 'N/A'}</span>
+                            <span><strong> Mileage:</strong> ${v.mileage || 0} km</span>
                         </div>
                         <button class="btn btn-danger btn-sm mt-3" onclick="deleteVehicle('${doc.id}')">
-                            🗑️ Delete
+                             Delete
                         </button>
                     </div>
                 </div>
@@ -56,7 +56,7 @@ async function loadVehicles() {
         container.innerHTML = html;
     } catch (error) {
         console.error('Error loading vehicles:', error);
-        showToast('❌ Error loading vehicles', 'error');
+        showToast(' Error loading vehicles', 'error');
     }
 }
 
@@ -65,9 +65,9 @@ async function deleteVehicle(vehicleId) {
     
     try {
         await db.collection('vehicles').doc(vehicleId).delete();
-        showToast('✅ Vehicle deleted successfully', 'success');
+        showToast(' Vehicle deleted successfully', 'success');
         loadVehicles();
     } catch (error) {
-        showToast('❌ ' + error.message, 'error');
+        showToast(' ' + error.message, 'error');
     }
 }

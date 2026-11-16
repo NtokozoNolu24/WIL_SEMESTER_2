@@ -19,10 +19,10 @@ const db = firebase.firestore();
 
 // Enable persistence
 db.enablePersistence({ synchronizeTabs: true })
-    .then(() => console.log('🔥 Firestore persistence enabled'))
-    .catch(err => console.warn('⚠️ Persistence warning:', err.message));
+    .then(() => console.log(' Firestore persistence enabled'))
+    .catch(err => console.warn(' Persistence warning:', err.message));
 
-console.log('🔥 Firebase initialized successfully');
+console.log(' Firebase initialized successfully');
 
 // ============================================
 // AUTH STATE MANAGEMENT
@@ -55,12 +55,12 @@ auth.onAuthStateChanged(async (user) => {
             currentUserData = { uid: user.uid, fullName: user.displayName || 'User', email: user.email };
         }
         updateNavForAuth();
-        console.log('👤 User signed in:', user.email);
+        console.log(' User signed in:', user.email);
     } else {
         currentUser = null;
         currentUserData = null;
         updateNavForAuth();
-        console.log('👤 User signed out');
+        console.log(' User signed out');
     }
 });
 
@@ -76,11 +76,11 @@ function updateNavForAuth() {
 
     if (loginNav) {
         if (isLoggedIn) {
-            loginNav.textContent = '👤 Dashboard';
+            loginNav.textContent = ' Dashboard';
             loginNav.href = 'dashboard.html';
             loginNav.className = '';
         } else {
-            loginNav.textContent = '🔑 Login';
+            loginNav.textContent = ' Login';
             loginNav.href = 'login.html';
             loginNav.className = 'btn-login';
         }
@@ -101,9 +101,9 @@ function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer') || createToastContainer();
     const toast = document.createElement('div');
     toast.className = `toast-item ${type}`;
-    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    const icons = { success: '', error: '', info: '' };
     toast.innerHTML = `
-        <span>${icons[type] || 'ℹ️'}</span>
+        <span>${icons[type] || ''}</span>
         <span>${message}</span>
         <button class="close-btn" onclick="this.parentElement.remove()">&times;</button>
     `;
@@ -129,7 +129,7 @@ function isLoggedIn() { return !!currentUser; }
 
 function requireAuth() {
     if (!isLoggedIn()) {
-        showToast('❌ Please login to access this page.', 'error');
+        showToast(' Please login to access this page.', 'error');
         window.location.href = 'login.html';
         return false;
     }
@@ -167,11 +167,11 @@ async function logout() {
     if (!confirm('Are you sure you want to logout?')) return;
     try {
         await auth.signOut();
-        showToast('👋 Logged out successfully!', 'info');
+        showToast(' Logged out successfully!', 'info');
         setTimeout(() => { window.location.href = 'index.html'; }, 1000);
     } catch (error) {
-        showToast('❌ ' + error.message, 'error');
+        showToast(' ' + error.message, 'error');
     }
 }
 
-console.log('🔥 Firebase config loaded successfully');
+console.log(' Firebase config loaded successfully');

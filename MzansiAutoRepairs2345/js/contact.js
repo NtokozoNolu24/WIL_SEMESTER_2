@@ -21,7 +21,7 @@ async function submitEnquiry(event) {
 
     // Validate
     if (!name || !email || !subject || !message) {
-        showToast('❌ Please fill in all required fields.', 'error');
+        showToast(' Please fill in all required fields.', 'error');
         return;
     }
 
@@ -38,9 +38,9 @@ async function submitEnquiry(event) {
             isRead: false
         });
         
-        showToast('✅ Your enquiry has been sent successfully! 📧', 'success');
+        showToast(' Your enquiry has been sent successfully! ', 'success');
         document.getElementById('contactForm').reset();
     } catch (error) {
-        showToast('❌ ' + error.message, 'error');
+        showToast(' ' + error.message, 'error');
     }
 }

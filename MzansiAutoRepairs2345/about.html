@@ -434,7 +434,7 @@
     <section class="page-header">
         <div class="container">
             <h1> About Us</h1>
-            <p style="color:rgba(255,255,255,0.8);">Your trusted auto repair partner in Sandton 🇿🇦</p>
+            <p style="color:rgba(255,255,255,0.8);">Your trusted auto repair partner in Sandton </p>
         </div>
     </section>
 
@@ -445,7 +445,7 @@
                 <h2> Who We Are</h2>
                 <p>
                     Mzansi Auto Repairs is a premier automotive service center dedicated to providing top-quality repair
-                    and maintenance services in Sandton. 🇿🇦
+                    and maintenance services in Sandton. 
                 </p>
                 <p>
                     With over a decade of experience, we have built a reputation for excellence, reliability, and
@@ -552,7 +552,7 @@
         <div class="container">
             <div class="footer-grid">
                 <div>
-                    <h4>🔧 Mzansi Auto Repairs</h4>
+                    <h4> Mzansi Auto Repairs</h4>
                     <p style="color:#aaa;">Your trusted auto repair partner in Sandton.</p>
                     <div class="social-icons">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
@@ -585,7 +585,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>© 2026 Mzansi Auto Repairs. All rights reserved. 🇿🇦</p>
+                <p>© 2026 Mzansi Auto Repairs. All rights reserved. </p>
             </div>
         </div>
     </footer>
@@ -606,8 +606,8 @@
             const c = document.getElementById('toastContainer');
             const t = document.createElement('div');
             t.className = `toast-item ${type}`;
-            const icons = { success: '✅', error: '❌', info: 'ℹ️' };
-            t.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${msg}</span><button class="close-btn" onclick="this.parentElement.remove()">&times;</button>`;
+            const icons = { success: '', error: '', info: '' };
+            t.innerHTML = `<span>${icons[type] || ''}</span><span>${msg}</span><button class="close-btn" onclick="this.parentElement.remove()">&times;</button>`;
             c.appendChild(t);
             setTimeout(() => t.remove(), 5000);
         }
@@ -622,7 +622,7 @@
         }
 
         function logoutUser() {
-            if (confirm('Logout?')) { auth.signOut(); showToast('👋 Logged out', 'info'); setTimeout(() => location.href = 'index.html', 1000); }
+            if (confirm('Logout?')) { auth.signOut(); showToast(' Logged out', 'info'); setTimeout(() => location.href = 'index.html', 1000); }
         }
 
         auth.onAuthStateChanged(user => { updateNav(user); });

@@ -639,7 +639,7 @@
     <section class="page-header">
         <div class="container">
             <div>
-                <h1>👋 Welcome back!</h1>
+                <h1> Welcome back!</h1>
                 <p style="color:rgba(255,255,255,0.8);" id="userEmailDisplay">user@email.com</p>
             </div>
             <div class="user-badge">
@@ -698,7 +698,7 @@
                         <button class="btn btn-primary" onclick="showTab('service')"> Book New Service</button>
                         <button class="btn btn-outline" onclick="openAddVehicleModal()"> Add Vehicle</button>
                         <button class="btn btn-outline" onclick="showTab('bookings')"> View Bookings</button>
-                        <a href="reviews.html" class="btn btn-outline">⭐ Write a Review</a>
+                        <a href="reviews.html" class="btn btn-outline">★ Write a Review</a>
                     </div>
                 </div>
             </div>
@@ -763,17 +763,17 @@
                     <h4> Contact Info</h4>
                     <p style="color:#aaa;"> 123 Main Street, Sandton</p>
                     <p style="color:#aaa;"> (011) 234-5678</p>
-                    <p style="color:#aaa;">✉ info@mzansiauto.co.za</p>
+                    <p style="color:#aaa;"> info@mzansiauto.co.za</p>
                 </div>
                 <div>
-                    <h4>🕐 Hours</h4>
+                    <h4> Hours</h4>
                     <p style="color:#aaa;">Mon - Fri: 7:30AM - 6PM</p>
                     <p style="color:#aaa;">Sat: 8:00AM - 2:00PM</p>
                     <p style="color:#aaa;">Sun: Closed</p>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>© 2026 Mzansi Auto Repairs. All rights reserved. 🇿🇦</p>
+                <p>© 2026 Mzansi Auto Repairs. All rights reserved. </p>
             </div>
         </div>
     </footer>
@@ -808,8 +808,8 @@
             const t = document.createElement('div');
             t.className = `toast-item ${type}`;
             const icons = {
-                success: ', error: '❌', info: 'ℹ️' };
-                t.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${msg}</span><button class="close-btn" onclick="this.parentElement.remove()">&times;</button>`;
+                success: '', error: '', info: '' };
+                t.innerHTML = `<span>${icons[type] || ''}</span><span>${msg}</span><button class="close-btn" onclick="this.parentElement.remove()">&times;</button>`;
                 c.appendChild(t);
                 setTimeout(() => t.remove(), 5000);
         }
@@ -819,7 +819,7 @@
         function logoutUser() {
             if (confirm('Are you sure you want to logout?')) {
                 auth.signOut();
-                showToast('👋 Logged out successfully', 'info');
+                showToast(' Logged out successfully', 'info');
                 setTimeout(() => window.location.href = 'index.html', 1000);
             }
         }
@@ -849,7 +849,7 @@
 
         // ===== ADD VEHICLE =====
         function openAddVehicleModal() {
-            openModal('🚗 Add Vehicle', `
+            openModal(' Add Vehicle', `
           <form id="addVehicleForm" onsubmit="addVehicle(event)">
             <div class="form-group"><label> Make</label><input type="text" id="vMake" placeholder="e.g., Toyota" required></div>
             <div class="form-group"><label> Model</label><input type="text" id="vModel" placeholder="e.g., Corolla" required></div>
@@ -878,10 +878,10 @@
             try {
                 await db.collection('vehicles').add(vehicle);
                 closeModal();
-                showToast('✅ Vehicle added successfully!', 'success');
+                showToast(' Vehicle added successfully!', 'success');
                 loadVehicles();
                 updateStats();
-            } catch (e) { showToast('❌ ' + e.message, 'error'); }
+            } catch (e) { showToast(' ' + e.message, 'error'); }
         }
 
         // ===== DELETE VEHICLE =====
@@ -889,16 +889,16 @@
             if (!confirm('Delete this vehicle?')) return;
             try {
                 await db.collection('vehicles').doc(vehicleId).delete();
-                showToast('✅ Vehicle deleted', 'success');
+                showToast(' Vehicle deleted', 'success');
                 loadVehicles();
                 updateStats();
-            } catch (e) { showToast('❌ ' + e.message, 'error'); }
+            } catch (e) { showToast(' ' + e.message, 'error'); }
         }
 
         // ===== BOOK SERVICE =====
         function openBookingModal(serviceId, serviceTitle) {
             if (!currentUser) {
-                showToast('❌ Please login to book a service.', 'error');
+                showToast(' Please login to book a service.', 'error');
                 return;
             }
             const today = new Date();
@@ -918,18 +918,18 @@
                 <option value="16:00">04:00 PM</option><option value="17:00">05:00 PM</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-primary btn-block">✅ Confirm Booking</button>
+            <button type="submit" class="btn btn-primary btn-block"> Confirm Booking</button>
           </form>
         `);
         }
 
         async function bookService(event, serviceId) {
             event.preventDefault();
-            if (!currentUser) { showToast('❌ Please login', 'error'); return; }
+            if (!currentUser) { showToast(' Please login', 'error'); return; }
             const form = document.getElementById('bookingForm');
             const date = form.querySelector('[name="date"]').value;
             const time = form.querySelector('[name="time"]').value;
-            if (!date || !time) { showToast('❌ Select date and time.', 'error'); return; }
+            if (!date || !time) { showToast(' Select date and time.', 'error'); return; }
             try {
                 await db.collection('bookings').add({
                     userId: currentUser.uid,
@@ -940,10 +940,10 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 closeModal();
-                showToast('✅ Service booked successfully! ', 'success');
+                showToast(' Service booked successfully! ', 'success');
                 loadBookings();
                 updateStats();
-            } catch (e) { showToast('❌ ' + e.message, 'error'); }
+            } catch (e) { showToast(' ' + e.message, 'error'); }
         }
 
         // ===== CANCEL BOOKING =====
@@ -954,10 +954,10 @@
                     status: 'Cancelled',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                showToast('✅ Booking cancelled', 'success');
+                showToast(' Booking cancelled', 'success');
                 loadBookings();
                 updateStats();
-            } catch (e) { showToast('❌ ' + e.message, 'error'); }
+            } catch (e) { showToast(' ' + e.message, 'error'); }
         }
 
         // ===== LOAD BOOKINGS =====
@@ -971,7 +971,7 @@
                 .orderBy('date', 'desc')
                 .onSnapshot(async (snapshot) => {
                     if (snapshot.empty) {
-                        container.innerHTML = `<div class="empty-state"><div class="icon">📅</div><p>No bookings yet. Book your first service!</p></div>`;
+                        container.innerHTML = `<div class="empty-state"><div class="icon"></div><p>No bookings yet. Book your first service!</p></div>`;
                         return;
                     }
                     let html = '';
@@ -988,9 +988,9 @@
                     <div><h5>${serviceName}</h5><span class="status-badge status-${b.status}">${b.status}</span></div>
                     <small style="color:#999;">${b.date}</small>
                   </div>
-                  <div style="margin-top:10px;">🕐 ${b.time}</div>
-                  ${b.status !== 'Cancelled' && b.status !== 'Completed' ? `<button class="btn btn-danger btn-sm" style="margin-top:10px;" onclick="cancelBooking('${doc.id}')">❌ Cancel</button>` : ''}
-                  ${b.status === 'Completed' ? `<span style="color:#27ae60;font-weight:600;display:block;margin-top:10px;">✅ Completed</span>` : ''}
+                  <div style="margin-top:10px;"> ${b.time}</div>
+                  ${b.status !== 'Cancelled' && b.status !== 'Completed' ? `<button class="btn btn-danger btn-sm" style="margin-top:10px;" onclick="cancelBooking('${doc.id}')"> Cancel</button>` : ''}
+                  ${b.status === 'Completed' ? `<span style="color:#27ae60;font-weight:600;display:block;margin-top:10px;"> Completed</span>` : ''}
                 </div>
               `;
                     }
@@ -1010,7 +1010,7 @@
                 .orderBy('createdAt', 'desc')
                 .onSnapshot((snapshot) => {
                     if (snapshot.empty) {
-                        container.innerHTML = `<div class="empty-state"><div class="icon">🚗</div><p>No vehicles registered. Add your first vehicle!</p></div>`;
+                        container.innerHTML = `<div class="empty-state"><div class="icon"></div><p>No vehicles registered. Add your first vehicle!</p></div>`;
                         return;
                     }
                     let html = '';
@@ -1042,7 +1042,7 @@
             <div style="font-size:2.5rem;color:#1a3a5c;"><i class="${s.icon}"></i></div>
             <h4 style="margin:10px 0;">${s.title}</h4>
             <div style="color:#6c757d;"> R${s.price} ·  ${s.duration}</div>
-            <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="openBookingModal('${s.id}','${s.title}')">📅 Book Now</button>
+            <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="openBookingModal('${s.id}','${s.title}')"> Book Now</button>
           </div>
         `).join('');
         }

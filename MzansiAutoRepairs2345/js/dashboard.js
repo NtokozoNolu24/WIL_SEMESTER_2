@@ -56,7 +56,7 @@ async function loadDashboard() {
 
     } catch (error) {
         console.error('Error loading dashboard:', error);
-        showToast('❌ Error loading dashboard data', 'error');
+        showToast(' Error loading dashboard data', 'error');
     }
 }
 
@@ -82,7 +82,7 @@ async function loadRecentActivity(userId) {
                 }
             } catch (e) {}
             activities.push({
-                desc: `📅 Booked: ${serviceName} on ${b.date} at ${b.time}`,
+                desc: ` Booked: ${serviceName} on ${b.date} at ${b.time}`,
                 time: b.createdAt ? b.createdAt.toDate() : new Date()
             });
         }
@@ -97,7 +97,7 @@ async function loadRecentActivity(userId) {
         recentVehicles.forEach(doc => {
             const v = doc.data();
             activities.push({
-                desc: `🚗 Added: ${v.make} ${v.model} (${v.year})`,
+                desc: ` Added: ${v.make} ${v.model} (${v.year})`,
                 time: v.createdAt ? v.createdAt.toDate() : new Date()
             });
         });
@@ -105,7 +105,7 @@ async function loadRecentActivity(userId) {
         activities.sort((a, b) => b.time - a.time);
 
         if (activities.length === 0) {
-            container.innerHTML = '<p class="text-muted text-center py-3">📭 No recent activity</p>';
+            container.innerHTML = '<p class="text-muted text-center py-3"> No recent activity</p>';
         } else {
             container.innerHTML = activities.slice(0, 5).map(a => `
                 <div class="activity-item">
@@ -131,7 +131,7 @@ async function loadRecentServices(userId) {
             .get();
 
         if (bookingsSnapshot.empty) {
-            container.innerHTML = '<p class="text-muted text-center py-3">📭 No service history</p>';
+            container.innerHTML = '<p class="text-muted text-center py-3"> No service history</p>';
             return;
         }
 
@@ -147,7 +147,7 @@ async function loadRecentServices(userId) {
             } catch (e) {}
             html += `
                 <div class="activity-item">
-                    <span>🔧 ${serviceName}</span>
+                    <span> ${serviceName}</span>
                     <span class="time">${b.date}</span>
                 </div>
             `;

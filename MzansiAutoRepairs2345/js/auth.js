@@ -20,8 +20,8 @@ const db = firebase.firestore();
 
 // Enable persistence
 db.enablePersistence({ synchronizeTabs: true })
-    .then(() => console.log('🔥 Firestore persistence enabled'))
-    .catch(err => console.warn('⚠️ Persistence warning:', err.message));
+    .then(() => console.log(' Firestore persistence enabled'))
+    .catch(err => console.warn(' Persistence warning:', err.message));
 
 // ============================================
 // TOAST NOTIFICATIONS
@@ -30,9 +30,9 @@ function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer') || createToastContainer();
     const toast = document.createElement('div');
     toast.className = `toast-item ${type}`;
-    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    const icons = { success: '', error: '', info: '' };
     toast.innerHTML = `
-        <span>${icons[type] || 'ℹ️'}</span>
+        <span>${icons[type] || ''}</span>
         <span>${message}</span>
         <button class="close-btn" onclick="this.parentElement.remove()">&times;</button>
     `;
@@ -60,11 +60,11 @@ function updateNavForAuth(user) {
     // Update login/logout buttons
     if (loginNav) {
         if (isLoggedIn) {
-            loginNav.textContent = '👤 Dashboard';
+            loginNav.textContent = ' Dashboard';
             loginNav.href = 'dashboard.html';
             loginNav.className = '';
         } else {
-            loginNav.textContent = '🔑 Login';
+            loginNav.textContent = ' Login';
             loginNav.href = 'login.html';
             loginNav.className = 'btn-login';
         }
@@ -101,10 +101,10 @@ function isLoggedIn() {
 function logout() {
     if (!confirm('Are you sure you want to logout?')) return;
     auth.signOut().then(() => {
-        showToast('👋 Logged out successfully!', 'info');
+        showToast(' Logged out successfully!', 'info');
         setTimeout(() => { window.location.href = 'index.html'; }, 1000);
     }).catch((error) => {
-        showToast('❌ ' + error.message, 'error');
+        showToast(' ' + error.message, 'error');
     });
 }
 
@@ -124,4 +124,4 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-console.log('🔥 Auth.js loaded successfully');
+console.log(' Auth.js loaded successfully');

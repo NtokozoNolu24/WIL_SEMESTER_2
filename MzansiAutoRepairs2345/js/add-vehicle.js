@@ -11,7 +11,7 @@ async function addVehicle(event) {
     
     const user = auth.currentUser;
     if (!user) {
-        showToast('❌ Please login to add a vehicle.', 'error');
+        showToast(' Please login to add a vehicle.', 'error');
         window.location.href = 'login.html';
         return;
     }
@@ -29,16 +29,16 @@ async function addVehicle(event) {
 
     // Validate
     if (!vehicle.make || !vehicle.model || !vehicle.year || !vehicle.licensePlate) {
-        showToast('❌ Please fill in all required fields.', 'error');
+        showToast(' Please fill in all required fields.', 'error');
         return;
     }
 
     try {
         await db.collection('vehicles').add(vehicle);
-        showToast('✅ Vehicle added successfully! 🚗', 'success');
+        showToast(' Vehicle added successfully! ', 'success');
         document.getElementById('addVehicleForm').reset();
         window.location.href = 'vehicles.html';
     } catch (error) {
-        showToast('❌ ' + error.message, 'error');
+        showToast(' ' + error.message, 'error');
     }
 }
