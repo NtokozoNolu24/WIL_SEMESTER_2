@@ -814,7 +814,8 @@
             background: #8e44ad;
             color: #fff;
         }
-    </style>
+   .admin-login-overlay { display: none !important; }
+</style>
 </head>
 
 <body>
@@ -1111,19 +1112,13 @@
             if (loginNav) loginNav.style.display = isLoggedIn ? 'none' : 'inline-block';
             if (logoutNav) logoutNav.style.display = isLoggedIn ? 'inline-block' : 'none';
         }
-
         // ===== ADMIN LOGIN =====
+        // Admins sign in on login.html; anyone who isn't an admin is sent there.
         function showAdminLogin() {
-            document.getElementById('adminLoginOverlay').classList.remove('hidden');
-            document.getElementById('adminLoginError').classList.remove('show');
-            document.getElementById('adminPassword').value = '';
-            document.getElementById('adminEmail').focus();
+            location.replace('login.html');
         }
 
-        function closeAdminLogin() {
-            document.getElementById('adminLoginOverlay').classList.add('hidden');
-        }
-
+        function closeAdminLogin() {}
         async function handleAdminLogin(event) {
             event.preventDefault();
             const email = document.getElementById('adminEmail').value.trim();
@@ -1139,7 +1134,7 @@
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
                 const doc = await db.collection('users').doc(user.uid).get();
-                if (doc.exists && doc.data().isAdmin === true) {
+                if (doc.exists && doc.data().role === 'ADMIN' && doc.data().status === 'APPROVED') {
                     isAdmin = true;
                     currentUser = user;
                     closeAdminLogin();
@@ -1831,7 +1826,7 @@
 
                 try {
                     const doc = await db.collection('users').doc(user.uid).get();
-                    if (doc.exists && doc.data().isAdmin === true) {
+                    if (doc.exists && doc.data().role === 'ADMIN' && doc.data().status === 'APPROVED') {
                         isAdmin = true;
                         document.getElementById('adminContent').classList.add('visible');
                         document.getElementById('adminBadge').innerHTML = '<i class="fas fa-shield-alt"></i> Administrator ';
