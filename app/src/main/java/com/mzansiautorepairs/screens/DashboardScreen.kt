@@ -239,6 +239,25 @@ fun DashboardScreen(
                             }
                         )
                     }
+
+                    // NEW: Staff Approvals
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        QuickLinkCard(
+                            title = "Staff Approvals",
+                            icon = Icons.Default.People,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                onNavigate(Routes.STAFF_APPROVALS)
+                            }
+                        )
+
+                        Spacer(
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
@@ -275,7 +294,9 @@ fun DashboardScreen(
 
             if (recentJobCards.isEmpty()) {
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
                             "No active job cards available.",
                             modifier = Modifier.padding(20.dp),
@@ -370,7 +391,9 @@ fun RecentJobCardItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
                     jobCard.customerName,
                     style = MaterialTheme.typography.titleMedium,
@@ -395,6 +418,7 @@ fun RecentJobCardItem(
             }
 
             Spacer(Modifier.width(8.dp))
+
             StatusChip(status = jobCard.status)
         }
     }
@@ -416,5 +440,3 @@ fun DashboardScreenPreview() {
         DashboardScreen()
     }
 }
-
-

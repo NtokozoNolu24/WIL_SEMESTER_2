@@ -24,14 +24,20 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 private val Context.sessionStore by preferencesDataStore(name = "session")
+
 private val KEY_USER_ID = stringPreferencesKey("user_id")
 
+// AUTHENTICATION RESULTS
 sealed class AuthResult {
+
     data class Success(val user: UserEntity) : AuthResult()
+
     data class PendingApproval(val message: String) : AuthResult()
+
     data class Error(val message: String) : AuthResult()
 }
 
+// PENDING STAFF APPLICATION MODEL
 data class PendingStaffApplication(
     val uid: String,
     val fullName: String,
@@ -43,41 +49,47 @@ data class PendingStaffApplication(
 class AuthRepository(private val context: Context) {
 
     private val userDao = AppDatabase.get(context).userDao()
+
     private val firebaseAuth = FirebaseAuth.getInstance()
+
     private val firestore = FirebaseFirestore.getInstance()
 
     companion object {
+
         private const val TAG = "AuthRepository"
 
         private const val USERS_COLLECTION = "users"
-        private const val SYSTEM_COLLECTION = "system"
-        private const val BOOTSTRAP_DOCUMENT = "adminBootstrap"
 
         private const val STATUS_PENDING = "PENDING"
+
         private const val STATUS_APPROVED = "APPROVED"
+
         private const val STATUS_REJECTED = "REJECTED"
 
         private const val ROLE_PENDING = "PENDING"
 
         private const val REGISTRATION_SUCCESS_MESSAGE =
-            "Registration submitted successfully. Your account is awaiting administrator approval. You can sign in once your account has been approved."
+            "Registration submitted successfully. " +
+                    "Your account is awaiting administrator approval. " +
+                    "You can sign in once your account has been approved."
     }
 
+    // ------------------------------------------------
     // EMAIL AND PASSWORD REGISTRATION
+    // ------------------------------------------------
+
     suspend fun register(
         fullName: String,
         email: String,
         phone: String,
         password: String,
         confirmPassword: String,
-        role: UserRole,
-        workId: String = ""
+        role: UserRole
     ): AuthResult = withContext(Dispatchers.IO) {
 
         val cleanName = fullName.trim()
         val cleanEmail = email.trim().lowercase()
         val cleanPhone = phone.filter { it.isDigit() }
-        val cleanWorkId = workId.trim()
 
         val validationError = validateRegistration(
             cleanName,
@@ -91,13 +103,8 @@ class AuthRepository(private val context: Context) {
             return@withContext AuthResult.Error(validationError)
         }
 
-        if (role == UserRole.ADMIN && cleanWorkId.isBlank()) {
-            return@withContext AuthResult.Error(
-                "Administrator Work ID is required."
-            )
-        }
-
         try {
+
             val authResult = firebaseAuth
                 .createUserWithEmailAndPassword(cleanEmail, password)
                 .await()
@@ -108,31 +115,6 @@ class AuthRepository(private val context: Context) {
                 )
 
             try {
-                if (role == UserRole.ADMIN) {
-
-                    val initialAdminCreated = createInitialAdminIfAvailable(
-                        uid = firebaseUser.uid,
-                        fullName = cleanName,
-                        email = cleanEmail,
-                        phone = cleanPhone
-                    )
-
-                    if (initialAdminCreated) {
-                        val adminUser = UserEntity(
-                            id = firebaseUser.uid,
-                            fullName = cleanName,
-                            email = cleanEmail,
-                            phone = cleanPhone,
-                            role = UserRole.ADMIN.name,
-                            passwordHash = ""
-                        )
-
-                        cacheUser(adminUser)
-                        saveSession(adminUser.id)
-
-                        return@withContext AuthResult.Success(adminUser)
-                    }
-                }
 
                 createPendingProfile(
                     uid = firebaseUser.uid,
@@ -148,12 +130,23 @@ class AuthRepository(private val context: Context) {
                 AuthResult.PendingApproval(REGISTRATION_SUCCESS_MESSAGE)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Registration profile creation failed", e)
+
+                Log.e(
+                    TAG,
+                    "Failed to save pending user profile",
+                    e
+                )
 
                 try {
                     firebaseUser.delete().await()
                 } catch (deleteError: Exception) {
-                    Log.e(TAG, "Could not remove incomplete account", deleteError)
+
+                    Log.e(
+                        TAG,
+                        "Could not delete incomplete Firebase account",
+                        deleteError
+                    )
+
                 } finally {
                     firebaseAuth.signOut()
                 }
@@ -164,51 +157,66 @@ class AuthRepository(private val context: Context) {
             }
 
         } catch (e: FirebaseAuthUserCollisionException) {
-            AuthResult.Error("An account with this email already exists.")
+
+            AuthResult.Error(
+                "An account with this email already exists."
+            )
+
         } catch (e: FirebaseAuthWeakPasswordException) {
-            AuthResult.Error("Your password is too weak. Use at least 8 characters.")
+
+            AuthResult.Error(
+                "Your password is too weak. Use at least 8 characters."
+            )
+
         } catch (e: Exception) {
+
             Log.e(TAG, "Email registration failed", e)
+
             firebaseAuth.signOut()
+
             AuthResult.Error(readableError(e))
         }
     }
 
+    // ------------------------------------------------
     // GOOGLE REGISTRATION
+    // ------------------------------------------------
+
     suspend fun registerWithGoogle(
         fullName: String,
         email: String,
         phone: String,
-        role: UserRole,
-        workId: String = ""
+        role: UserRole
     ): AuthResult = withContext(Dispatchers.IO) {
 
         val cleanName = fullName.trim()
         val cleanEmail = email.trim().lowercase()
         val cleanPhone = phone.filter { it.isDigit() }
-        val cleanWorkId = workId.trim()
 
         if (cleanName.isBlank()) {
-            firebaseAuth.signOut()
-            return@withContext AuthResult.Error("Full name is required.")
-        }
 
-        if (!Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()) {
             firebaseAuth.signOut()
-            return@withContext AuthResult.Error("Enter a valid email address.")
-        }
 
-        if (cleanPhone.length != 10 || !cleanPhone.startsWith("0")) {
-            firebaseAuth.signOut()
             return@withContext AuthResult.Error(
-                "Enter a valid South African phone number with exactly 10 digits, starting with 0."
+                "Full name is required."
             )
         }
 
-        if (role == UserRole.ADMIN && cleanWorkId.isBlank()) {
+        if (!Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()) {
+
             firebaseAuth.signOut()
+
             return@withContext AuthResult.Error(
-                "Administrator Work ID is required."
+                "Enter a valid email address."
+            )
+        }
+
+        if (cleanPhone.length != 10 || !cleanPhone.startsWith("0")) {
+
+            firebaseAuth.signOut()
+
+            return@withContext AuthResult.Error(
+                "Enter a valid South African phone number with exactly 10 digits, starting with 0."
             )
         }
 
@@ -218,13 +226,16 @@ class AuthRepository(private val context: Context) {
             )
 
         if (firebaseUser.email?.trim()?.lowercase() != cleanEmail) {
+
             firebaseAuth.signOut()
+
             return@withContext AuthResult.Error(
                 "The Google account does not match the supplied email."
             )
         }
 
         try {
+
             val profileReference = firestore
                 .collection(USERS_COLLECTION)
                 .document(firebaseUser.uid)
@@ -232,42 +243,22 @@ class AuthRepository(private val context: Context) {
             val existingProfile = profileReference.get().await()
 
             if (existingProfile.exists()) {
+
                 val status = existingProfile.getString("status")
+
                 firebaseAuth.signOut()
 
                 return@withContext if (status == STATUS_APPROVED) {
+
                     AuthResult.Error(
                         "This account is already registered. Please sign in."
                     )
+
                 } else {
+
                     AuthResult.Error(
-                        "This account is already registered and is awaiting administrator approval."
+                        "This account has already been registered and is awaiting administrator approval."
                     )
-                }
-            }
-
-            if (role == UserRole.ADMIN) {
-                val initialAdminCreated = createInitialAdminIfAvailable(
-                    uid = firebaseUser.uid,
-                    fullName = cleanName,
-                    email = cleanEmail,
-                    phone = cleanPhone
-                )
-
-                if (initialAdminCreated) {
-                    val adminUser = UserEntity(
-                        id = firebaseUser.uid,
-                        fullName = cleanName,
-                        email = cleanEmail,
-                        phone = cleanPhone,
-                        role = UserRole.ADMIN.name,
-                        passwordHash = ""
-                    )
-
-                    cacheUser(adminUser)
-                    saveSession(adminUser.id)
-
-                    return@withContext AuthResult.Success(adminUser)
                 }
             }
 
@@ -285,7 +276,9 @@ class AuthRepository(private val context: Context) {
             AuthResult.PendingApproval(REGISTRATION_SUCCESS_MESSAGE)
 
         } catch (e: Exception) {
+
             Log.e(TAG, "Google registration failed", e)
+
             firebaseAuth.signOut()
 
             AuthResult.Error(
@@ -294,102 +287,77 @@ class AuthRepository(private val context: Context) {
         }
     }
 
-    // CREATE THE FIRST ADMINISTRATOR ONLY
-    private suspend fun createInitialAdminIfAvailable(
-        uid: String,
-        fullName: String,
-        email: String,
-        phone: String
-    ): Boolean {
-
-        val adminReference = firestore
-            .collection(USERS_COLLECTION)
-            .document(uid)
-
-        val bootstrapReference = firestore
-            .collection(SYSTEM_COLLECTION)
-            .document(BOOTSTRAP_DOCUMENT)
-
-        return firestore.runTransaction { transaction ->
-
-            val bootstrap = transaction.get(bootstrapReference)
-
-            if (bootstrap.exists()) {
-                return@runTransaction false
-            }
-
-            val adminProfile = hashMapOf<String, Any>(
-                "uid" to uid,
-                "fullName" to fullName,
-                "email" to email,
-                "phone" to phone,
-                "requestedRole" to UserRole.ADMIN.name,
-                "role" to UserRole.ADMIN.name,
-                "status" to STATUS_APPROVED,
-                "authProvider" to "EMAIL",
-                "createdAt" to FieldValue.serverTimestamp()
-            )
-
-            transaction.set(adminReference, adminProfile)
-
-            transaction.set(
-                bootstrapReference,
-                mapOf(
-                    "uid" to uid,
-                    "createdAt" to FieldValue.serverTimestamp()
-                )
-            )
-
-            true
-
-        }.await()
-    }
-
+    // ------------------------------------------------
     // LOOK UP AN EXISTING GOOGLE USER
+    // ------------------------------------------------
+
     suspend fun findGoogleUser(email: String): UserEntity? =
         withContext(Dispatchers.IO) {
 
             val firebaseUser = firebaseAuth.currentUser
                 ?: return@withContext null
 
-            if (firebaseUser.email?.trim()?.lowercase() != email.trim().lowercase()) {
+            if (
+                firebaseUser.email?.trim()?.lowercase() !=
+                email.trim().lowercase()
+            ) {
+
                 firebaseAuth.signOut()
+
                 return@withContext null
             }
 
             try {
+
                 val snapshot = firestore
                     .collection(USERS_COLLECTION)
                     .document(firebaseUser.uid)
                     .get()
                     .await()
 
-                if (!snapshot.exists() ||
-                    snapshot.getString("status") != STATUS_APPROVED
-                ) {
+                if (!snapshot.exists()) {
+
                     firebaseAuth.signOut()
+
+                    return@withContext null
+                }
+
+                if (snapshot.getString("status") != STATUS_APPROVED) {
+
+                    firebaseAuth.signOut()
+
                     return@withContext null
                 }
 
                 val user = snapshot.toLocalUser(firebaseUser.uid)
 
                 if (user.role !in UserRole.entries.map { it.name }) {
+
                     firebaseAuth.signOut()
+
                     return@withContext null
                 }
 
                 cacheUser(user)
+
                 saveSession(user.id)
+
                 user
 
             } catch (e: Exception) {
+
                 Log.e(TAG, "Google user lookup failed", e)
+
                 firebaseAuth.signOut()
+
                 null
             }
         }
 
+    // ------------------------------------------------
     // EMAIL AND PASSWORD LOGIN
+    // ------------------------------------------------
+
     suspend fun login(
         email: String,
         password: String
@@ -398,16 +366,21 @@ class AuthRepository(private val context: Context) {
         val cleanEmail = email.trim().lowercase()
 
         if (cleanEmail.isBlank() || password.isBlank()) {
+
             return@withContext AuthResult.Error(
                 "Enter your email and password."
             )
         }
 
         if (!Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()) {
-            return@withContext AuthResult.Error("Enter a valid email address.")
+
+            return@withContext AuthResult.Error(
+                "Enter a valid email address."
+            )
         }
 
         try {
+
             val result = firebaseAuth
                 .signInWithEmailAndPassword(cleanEmail, password)
                 .await()
@@ -424,7 +397,9 @@ class AuthRepository(private val context: Context) {
                 .await()
 
             if (!profile.exists()) {
+
                 firebaseAuth.signOut()
+
                 return@withContext AuthResult.Error(
                     "Your staff profile was not found. Please contact the administrator."
                 )
@@ -433,6 +408,7 @@ class AuthRepository(private val context: Context) {
             val status = profile.getString("status")
 
             if (status != STATUS_APPROVED) {
+
                 firebaseAuth.signOut()
 
                 return@withContext AuthResult.Error(
@@ -447,174 +423,72 @@ class AuthRepository(private val context: Context) {
             val user = profile.toLocalUser(firebaseUser.uid)
 
             if (user.role !in UserRole.entries.map { it.name }) {
+
                 firebaseAuth.signOut()
+
                 return@withContext AuthResult.Error(
                     "Your account has an invalid staff role. Contact the administrator."
                 )
             }
 
             cacheUser(user)
+
             saveSession(user.id)
 
             AuthResult.Success(user)
 
         } catch (e: FirebaseAuthInvalidCredentialsException) {
+
             firebaseAuth.signOut()
+
             AuthResult.Error("Incorrect email or password.")
+
         } catch (e: Exception) {
+
             Log.e(TAG, "Login failed", e)
+
             firebaseAuth.signOut()
+
             AuthResult.Error(readableError(e))
         }
     }
 
-    // GET PENDING STAFF APPLICATIONS
-    suspend fun getPendingStaffApplications(): List<PendingStaffApplication> =
-        withContext(Dispatchers.IO) {
-
-            if (!isCurrentUserAdmin()) {
-                throw SecurityException(
-                    "Only an approved administrator can view staff applications."
-                )
-            }
-
-            val snapshot = firestore
-                .collection(USERS_COLLECTION)
-                .whereEqualTo("status", STATUS_PENDING)
-                .get()
-                .await()
-
-            snapshot.documents.mapNotNull { document ->
-
-                val requestedRole =
-                    document.getString("requestedRole") ?: return@mapNotNull null
-
-                if (requestedRole != UserRole.TECHNICIAN.name &&
-                    requestedRole != UserRole.RECEPTIONIST.name
-                ) {
-                    return@mapNotNull null
-                }
-
-                PendingStaffApplication(
-                    uid = document.id,
-                    fullName = document.getString("fullName").orEmpty(),
-                    email = document.getString("email").orEmpty(),
-                    phone = document.getString("phone").orEmpty(),
-                    requestedRole = requestedRole
-                )
-            }
-        }
-
-    // APPROVE A STAFF APPLICATION
-    suspend fun approveStaffApplication(uid: String) =
-        withContext(Dispatchers.IO) {
-
-            if (!isCurrentUserAdmin()) {
-                throw SecurityException(
-                    "Only an approved administrator can approve staff."
-                )
-            }
-
-            val reference = firestore
-                .collection(USERS_COLLECTION)
-                .document(uid)
-
-            val application = reference.get().await()
-
-            if (!application.exists() ||
-                application.getString("status") != STATUS_PENDING
-            ) {
-                throw IllegalStateException(
-                    "This application is no longer pending."
-                )
-            }
-
-            val requestedRole = application.getString("requestedRole")
-
-            if (requestedRole != UserRole.TECHNICIAN.name &&
-                requestedRole != UserRole.RECEPTIONIST.name
-            ) {
-                throw IllegalArgumentException("Invalid staff role.")
-            }
-
-            reference.update(
-                mapOf(
-                    "role" to requestedRole,
-                    "status" to STATUS_APPROVED,
-                    "approvedAt" to FieldValue.serverTimestamp()
-                )
-            ).await()
-        }
-
-    // REJECT A STAFF APPLICATION
-    suspend fun rejectStaffApplication(uid: String) =
-        withContext(Dispatchers.IO) {
-
-            if (!isCurrentUserAdmin()) {
-                throw SecurityException(
-                    "Only an approved administrator can reject staff."
-                )
-            }
-
-            val reference = firestore
-                .collection(USERS_COLLECTION)
-                .document(uid)
-
-            val application = reference.get().await()
-
-            if (!application.exists() ||
-                application.getString("status") != STATUS_PENDING
-            ) {
-                throw IllegalStateException(
-                    "This application is no longer pending."
-                )
-            }
-
-            reference.update(
-                mapOf(
-                    "status" to STATUS_REJECTED,
-                    "rejectedAt" to FieldValue.serverTimestamp()
-                )
-            ).await()
-        }
-
-    // CHECK CURRENT USER IS AN APPROVED ADMINISTRATOR
-    private suspend fun isCurrentUserAdmin(): Boolean {
-
-        val currentUser = firebaseAuth.currentUser ?: return false
-
-        val profile = firestore
-            .collection(USERS_COLLECTION)
-            .document(currentUser.uid)
-            .get()
-            .await()
-
-        return profile.exists() &&
-                profile.getString("role") == UserRole.ADMIN.name &&
-                profile.getString("status") == STATUS_APPROVED
-    }
-
+    // ------------------------------------------------
     // SEND PASSWORD RESET EMAIL
+    // ------------------------------------------------
+
     suspend fun sendPasswordResetEmail(email: String): String? =
         withContext(Dispatchers.IO) {
 
             val cleanEmail = email.trim().lowercase()
 
             if (!Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()) {
+
                 return@withContext "Enter a valid email address."
             }
 
             try {
-                firebaseAuth.sendPasswordResetEmail(cleanEmail).await()
+
+                firebaseAuth
+                    .sendPasswordResetEmail(cleanEmail)
+                    .await()
+
                 null
+
             } catch (e: Exception) {
-                Log.e(TAG, "Password reset failed", e)
+
+                Log.e(TAG, "Password reset request failed", e)
+
                 readableError(e)
             }
         }
 
+    // ------------------------------------------------
     // LOGOUT
+    // ------------------------------------------------
+
     suspend fun logout() {
+
         firebaseAuth.signOut()
 
         context.sessionStore.edit {
@@ -622,7 +496,10 @@ class AuthRepository(private val context: Context) {
         }
     }
 
-    // CURRENT USER
+    // ------------------------------------------------
+    // GET CURRENT USER
+    // ------------------------------------------------
+
     suspend fun getCurrentUser(): UserEntity? {
 
         val userId = context.sessionStore.data
@@ -639,7 +516,12 @@ class AuthRepository(private val context: Context) {
         }
     }
 
+    // ------------------------------------------------
+    // CHECK LOGIN STATUS
+    // ------------------------------------------------
+
     suspend fun isLoggedIn(): Boolean {
+
         val savedId = context.sessionStore.data
             .map { it[KEY_USER_ID] }
             .first()
@@ -648,7 +530,188 @@ class AuthRepository(private val context: Context) {
                 firebaseAuth.currentUser?.uid == savedId
     }
 
-    // CREATE A PENDING PROFILE
+    // ------------------------------------------------
+    // CHECK ADMIN PERMISSION
+    // ------------------------------------------------
+
+    suspend fun isCurrentUserAdmin(): Boolean {
+
+        val currentUser = firebaseAuth.currentUser
+            ?: return false
+
+        return try {
+
+            val document = firestore
+                .collection(USERS_COLLECTION)
+                .document(currentUser.uid)
+                .get()
+                .await()
+
+            document.exists() &&
+                    document.getString("role") == UserRole.ADMIN.name &&
+                    document.getString("status") == STATUS_APPROVED
+
+        } catch (e: Exception) {
+
+            Log.e(TAG, "Admin verification failed", e)
+
+            false
+        }
+    }
+
+    // ------------------------------------------------
+    // GET PENDING STAFF APPLICATIONS
+    // ------------------------------------------------
+
+    suspend fun getPendingStaffApplications():
+            List<PendingStaffApplication> =
+        withContext(Dispatchers.IO) {
+
+            if (!isCurrentUserAdmin()) {
+
+                throw SecurityException(
+                    "Only an approved administrator can view staff applications."
+                )
+            }
+
+            val snapshot = firestore
+                .collection(USERS_COLLECTION)
+                .whereEqualTo("status", STATUS_PENDING)
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { document ->
+
+                val requestedRole =
+                    document.getString("requestedRole")
+
+                if (
+                    requestedRole != UserRole.TECHNICIAN.name &&
+                    requestedRole != UserRole.RECEPTIONIST.name
+                ) {
+                    return@mapNotNull null
+                }
+
+                PendingStaffApplication(
+                    uid = document.id,
+                    fullName = document.getString("fullName").orEmpty(),
+                    email = document.getString("email").orEmpty(),
+                    phone = document.getString("phone").orEmpty(),
+                    requestedRole = requestedRole
+                )
+            }
+        }
+
+    // ------------------------------------------------
+    // APPROVE A STAFF APPLICATION
+    // ------------------------------------------------
+
+    suspend fun approveStaffApplication(
+        uid: String,
+        technicianId: String? = null
+    ) = withContext(Dispatchers.IO) {
+
+        if (!isCurrentUserAdmin()) {
+
+            throw SecurityException(
+                "Only an approved administrator can approve staff."
+            )
+        }
+
+        val reference = firestore
+            .collection(USERS_COLLECTION)
+            .document(uid)
+
+        val application = reference.get().await()
+
+        if (
+            !application.exists() ||
+            application.getString("status") != STATUS_PENDING
+        ) {
+
+            throw IllegalStateException(
+                "This application is no longer pending."
+            )
+        }
+
+        val requestedRole = application.getString("requestedRole")
+
+        if (
+            requestedRole != UserRole.TECHNICIAN.name &&
+            requestedRole != UserRole.RECEPTIONIST.name
+        ) {
+
+            throw IllegalArgumentException(
+                "Invalid staff role."
+            )
+        }
+
+        if (
+            requestedRole == UserRole.TECHNICIAN.name &&
+            technicianId.isNullOrBlank()
+        ) {
+
+            throw IllegalArgumentException(
+                "Please select an existing technician record before approval."
+            )
+        }
+
+        val updates = mutableMapOf<String, Any>(
+            "role" to requestedRole,
+            "status" to STATUS_APPROVED,
+            "approvedAt" to FieldValue.serverTimestamp()
+        )
+
+        if (requestedRole == UserRole.TECHNICIAN.name) {
+
+            updates["technicianId"] = technicianId!!
+        }
+
+        reference.update(updates).await()
+    }
+
+    // ------------------------------------------------
+    // REJECT A STAFF APPLICATION
+    // ------------------------------------------------
+
+    suspend fun rejectStaffApplication(uid: String) =
+        withContext(Dispatchers.IO) {
+
+            if (!isCurrentUserAdmin()) {
+
+                throw SecurityException(
+                    "Only an approved administrator can reject staff."
+                )
+            }
+
+            val reference = firestore
+                .collection(USERS_COLLECTION)
+                .document(uid)
+
+            val application = reference.get().await()
+
+            if (
+                !application.exists() ||
+                application.getString("status") != STATUS_PENDING
+            ) {
+
+                throw IllegalStateException(
+                    "This application is no longer pending."
+                )
+            }
+
+            reference.update(
+                mapOf(
+                    "status" to STATUS_REJECTED,
+                    "rejectedAt" to FieldValue.serverTimestamp()
+                )
+            ).await()
+        }
+
+    // ------------------------------------------------
+    // CREATE A FIRESTORE PROFILE
+    // ------------------------------------------------
+
     private suspend fun createPendingProfile(
         uid: String,
         fullName: String,
@@ -670,13 +733,17 @@ class AuthRepository(private val context: Context) {
             "createdAt" to FieldValue.serverTimestamp()
         )
 
-        firestore.collection(USERS_COLLECTION)
+        firestore
+            .collection(USERS_COLLECTION)
             .document(uid)
             .set(profile)
             .await()
     }
 
+    // ------------------------------------------------
     // REGISTRATION VALIDATION
+    // ------------------------------------------------
+
     private fun validateRegistration(
         fullName: String,
         email: String,
@@ -686,6 +753,7 @@ class AuthRepository(private val context: Context) {
     ): String? {
 
         return when {
+
             fullName.isBlank() ->
                 "Full name is required."
 
@@ -709,8 +777,13 @@ class AuthRepository(private val context: Context) {
         }
     }
 
+    // ------------------------------------------------
     // CONVERT FIRESTORE PROFILE TO ROOM USER
-    private fun DocumentSnapshot.toLocalUser(uid: String): UserEntity {
+    // ------------------------------------------------
+
+    private fun DocumentSnapshot.toLocalUser(
+        uid: String
+    ): UserEntity {
 
         return UserEntity(
             id = uid,
@@ -722,17 +795,32 @@ class AuthRepository(private val context: Context) {
         )
     }
 
+    // ------------------------------------------------
+    // CACHE USER
+    // ------------------------------------------------
+
     private suspend fun cacheUser(user: UserEntity) {
+
         userDao.insertAll(listOf(user))
     }
 
+    // ------------------------------------------------
+    // SAVE USER SESSION
+    // ------------------------------------------------
+
     private suspend fun saveSession(userId: String) {
+
         context.sessionStore.edit {
             it[KEY_USER_ID] = userId
         }
     }
 
+    // ------------------------------------------------
+    // READABLE ERROR MESSAGES
+    // ------------------------------------------------
+
     private fun readableError(exception: Exception): String {
+
         return when (exception) {
 
             is FirebaseAuthUserCollisionException ->
@@ -746,4 +834,3 @@ class AuthRepository(private val context: Context) {
         }
     }
 }
-

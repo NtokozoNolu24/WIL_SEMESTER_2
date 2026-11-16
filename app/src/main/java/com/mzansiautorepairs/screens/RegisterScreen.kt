@@ -443,8 +443,7 @@ fun RegisterScreen(
                                         phone = cleanPhone,
                                         password = password,
                                         confirmPassword = confirmPassword,
-                                        role = selectedRole,
-                                        workId = cleanWorkId
+                                        role = selectedRole
                                     )
 
                                     when (result) {

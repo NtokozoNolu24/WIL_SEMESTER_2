@@ -1,3 +1,4 @@
+
 package com.mzansiautorepairs
 
 import androidx.compose.runtime.Composable
@@ -19,23 +20,24 @@ import com.mzansiautorepairs.screens.ServiceScreen
 import com.mzansiautorepairs.screens.SettingsScreen
 import com.mzansiautorepairs.screens.TechnicianScreen
 import com.mzansiautorepairs.screens.VehicleScreen
+import com.mzansiautorepairs.screens.StaffApprovalScreen
 
 object Routes {
     const val TECHNICIANS = "technicians"
     const val VEHICLES = "vehicles"
     const val LOGIN = "login"
     const val REGISTER = "register"
-
     const val GOOGLE_REGISTER = "google_register"
     const val DASHBOARD = "dashboard"
     const val CUSTOMERS = "customers"
     const val JOBCARDS = "jobcards"
     const val JOBCARD_DETAIL = "jobcard/{jobId}"
     const val SERVICES = "services"
-    fun jobCardDetail(id: String) = "jobcard/$id"
-
     const val SETTINGS = "settings"
 
+    const val STAFF_APPROVALS = "staff_approvals"
+
+    fun jobCardDetail(id: String) = "jobcard/$id"
 }
 
 @Composable
@@ -52,31 +54,46 @@ fun AppNavHost(
         composable(Routes.LOGIN) {
             LoginScreen(navController = navController)
         }
+
         composable(Routes.REGISTER) {
             RegisterScreen(navController = navController)
         }
+
         composable(Routes.GOOGLE_REGISTER) {
             GoogleRegisterScreen(navController = navController)
         }
+
         composable(Routes.DASHBOARD) {
             DashboardScreen(navController = navController)
         }
+
         composable(Routes.CUSTOMERS) {
             CustomerScreen(navController = navController)
         }
+
         composable(Routes.JOBCARDS) {
             JobCardScreen(navController = navController)
         }
+
         composable(
             route = Routes.JOBCARD_DETAIL,
-            arguments = listOf(navArgument("jobId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("jobId") {
+                    type = NavType.StringType
+                }
+            )
         ) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
-            JobCardDetailScreen(navController = navController, jobId = jobId)
+            JobCardDetailScreen(
+                navController = navController,
+                jobId = jobId
+            )
         }
+
         composable(Routes.SERVICES) {
             ServiceScreen(navController = navController)
         }
+
         composable(Routes.SETTINGS) {
             SettingsScreen(navController = navController)
         }
@@ -89,6 +106,8 @@ fun AppNavHost(
             VehicleScreen(navController = navController)
         }
 
-
+        composable(Routes.STAFF_APPROVALS) {
+            StaffApprovalScreen(navController = navController)
+        }
     }
 }
