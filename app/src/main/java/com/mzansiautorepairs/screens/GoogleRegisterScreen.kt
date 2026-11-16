@@ -170,6 +170,10 @@ fun GoogleRegisterScreen(navController: NavController) {
                             is AuthResult.Error -> {
                                 errorMessage = result.message
                             }
+
+                            is AuthResult.PendingApproval -> {
+                                errorMessage = result.message
+                            }
                         }
                     } catch (e: Exception) {
                         errorMessage =

@@ -26,13 +26,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.mzansiautorepairs.Routes
+import com.mzansiautorepairs.UserRole
 import com.mzansiautorepairs.auth.AuthRepository
 import com.mzansiautorepairs.auth.AuthResult
 import com.mzansiautorepairs.components.MzansiTopBar
 import com.mzansiautorepairs.ui.theme.PrimaryDark
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onNavigateToDashboard: () -> Unit = {},
@@ -44,6 +44,13 @@ fun RegisterScreen(
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var workId by remember { mutableStateOf("") }
+
+    var selectedRole by remember {
+        mutableStateOf(UserRole.RECEPTIONIST)
+    }
+
+    var roleMenuExpanded by remember { mutableStateOf(false) }
 
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
@@ -58,6 +65,16 @@ fun RegisterScreen(
 
     val authRepository = remember {
         AuthRepository(context.applicationContext)
+    }
+
+    val isAdministrator = selectedRole == UserRole.ADMIN
+
+    fun roleLabel(role: UserRole): String {
+        return when (role) {
+            UserRole.ADMIN -> "Administrator"
+            UserRole.TECHNICIAN -> "Technician"
+            UserRole.RECEPTIONIST -> "Receptionist"
+        }
     }
 
     fun navigateToLogin() {
@@ -98,13 +115,18 @@ fun RegisterScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Create your staff account. An administrator must approve your registration before you can access the system.",
+                text = if (isAdministrator) {
+                    "Create the initial administrator account using your Work ID."
+                } else {
+                    "Create your staff account. Your registration will be reviewed by an administrator."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(Modifier.height(24.dp))
 
+            // FULL NAME
             OutlinedTextField(
                 value = fullName,
                 onValueChange = {
@@ -122,6 +144,7 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            // EMAIL
             OutlinedTextField(
                 value = email,
                 onValueChange = {
@@ -142,15 +165,23 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            // PHONE
             OutlinedTextField(
                 value = phone,
                 onValueChange = {
-                    phone = it
+                    phone = it.filter { character ->
+                        character.isDigit()
+                    }.take(10)
+
                     errorMessage = null
                 },
-                label = { Text("Phone Number") },
+                label = { Text("South African Phone Number") },
+                placeholder = { Text("0821234567") },
                 leadingIcon = {
                     Icon(Icons.Default.Phone, contentDescription = null)
+                },
+                supportingText = {
+                    Text("${phone.length}/10 digits. Must start with 0.")
                 },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Phone
@@ -162,6 +193,97 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            // STAFF ROLE
+            Text(
+                text = "Registering as",
+                modifier = Modifier.fillMaxWidth(),
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            Box(modifier = Modifier.fillMaxWidth()) {
+
+                OutlinedButton(
+                    onClick = {
+                        roleMenuExpanded = true
+                    },
+                    enabled = !isLoading && !registrationSubmitted,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = roleLabel(selectedRole),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Text("▼")
+                }
+
+                DropdownMenu(
+                    expanded = roleMenuExpanded,
+                    onDismissRequest = {
+                        roleMenuExpanded = false
+                    },
+                    modifier = Modifier.fillMaxWidth(0.85f)
+                ) {
+                    UserRole.entries.forEach { role ->
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(roleLabel(role))
+                            },
+                            onClick = {
+                                selectedRole = role
+                                roleMenuExpanded = false
+                                errorMessage = null
+                                successMessage = null
+                                workId = ""
+                            }
+                        )
+                    }
+                }
+            }
+
+            // ADMINISTRATOR WORK ID
+            if (isAdministrator) {
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = workId,
+                    onValueChange = {
+                        workId = it
+                        errorMessage = null
+                    },
+                    label = {
+                        Text("Administrator Work ID")
+                    },
+                    placeholder = {
+                        Text("Enter your Work ID")
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading && !registrationSubmitted,
+                    supportingText = {
+                        Text(
+                            "Required for initial administrator registration."
+                        )
+                    }
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = "The Work ID is currently collected for the demonstration setup. It is not stored or independently verified.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // PASSWORD
             OutlinedTextField(
                 value = password,
                 onValueChange = {
@@ -174,7 +296,6 @@ fun RegisterScreen(
                 },
                 trailingIcon = {
                     IconButton(
-                        enabled = !registrationSubmitted,
                         onClick = {
                             passwordVisible = !passwordVisible
                         }
@@ -202,6 +323,7 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            // CONFIRM PASSWORD
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = {
@@ -214,7 +336,6 @@ fun RegisterScreen(
                 },
                 trailingIcon = {
                     IconButton(
-                        enabled = !registrationSubmitted,
                         onClick = {
                             confirmPasswordVisible =
                                 !confirmPasswordVisible
@@ -241,6 +362,7 @@ fun RegisterScreen(
                 enabled = !isLoading && !registrationSubmitted
             )
 
+            // ERROR MESSAGE
             errorMessage?.let {
                 Spacer(Modifier.height(12.dp))
 
@@ -251,8 +373,9 @@ fun RegisterScreen(
                 )
             }
 
+            // SUCCESS MESSAGE
             successMessage?.let {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
 
                 Text(
                     text = it,
@@ -264,17 +387,21 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // REGISTER BUTTON
             Button(
                 enabled = !isLoading && !registrationSubmitted,
                 onClick = {
+
                     errorMessage = null
                     successMessage = null
 
                     val cleanName = fullName.trim()
                     val cleanEmail = email.trim().lowercase()
                     val cleanPhone = phone.trim()
+                    val cleanWorkId = workId.trim()
 
                     when {
+
                         cleanName.isBlank() ->
                             errorMessage = "Enter your full name."
 
@@ -282,35 +409,61 @@ fun RegisterScreen(
                             .matcher(cleanEmail).matches() ->
                             errorMessage = "Enter a valid email address."
 
-                        cleanPhone.filter { it.isDigit() }.length < 10 ->
-                            errorMessage = "Enter a valid phone number."
+                        cleanPhone.length != 10 ||
+                                !cleanPhone.startsWith("0") ->
+                            errorMessage =
+                                "Enter a valid South African phone number with exactly 10 digits, starting with 0."
+
+                        isAdministrator && cleanWorkId.isBlank() ->
+                            errorMessage =
+                                "Enter your Administrator Work ID."
 
                         password.length < 8 ->
-                            errorMessage = "Password must have at least 8 characters."
+                            errorMessage =
+                                "Password must have at least 8 characters."
 
                         !password.any { it.isLetter() } ||
                                 !password.any { it.isDigit() } ->
-                            errorMessage = "Password must contain letters and numbers."
+                            errorMessage =
+                                "Password must contain letters and numbers."
 
                         password != confirmPassword ->
                             errorMessage = "Passwords do not match."
 
                         else -> {
+
                             isLoading = true
 
                             scope.launch {
                                 try {
+
                                     val result = authRepository.register(
                                         fullName = cleanName,
                                         email = cleanEmail,
                                         phone = cleanPhone,
                                         password = password,
                                         confirmPassword = confirmPassword,
-                                        role = com.mzansiautorepairs.UserRole.RECEPTIONIST
+                                        role = selectedRole,
+                                        workId = cleanWorkId
                                     )
 
                                     when (result) {
+
+                                        is AuthResult.Success -> {
+
+                                            // Initial administrator is
+                                            // approved and signed in.
+                                            // Navigate directly to dashboard.
+                                            successMessage =
+                                                "Administrator account created successfully."
+
+                                            registrationSubmitted = true
+
+                                            onNavigateToDashboard()
+                                        }
+
                                         is AuthResult.PendingApproval -> {
+
                                             successMessage = result.message
                                             registrationSubmitted = true
 
@@ -319,21 +472,19 @@ fun RegisterScreen(
                                             phone = ""
                                             password = ""
                                             confirmPassword = ""
-                                        }
-
-                                        is AuthResult.Success -> {
-                                            successMessage =
-                                                "Your registration has been completed. Please sign in."
-                                            registrationSubmitted = true
+                                            workId = ""
                                         }
 
                                         is AuthResult.Error -> {
                                             errorMessage = result.message
                                         }
                                     }
+
                                 } catch (e: Exception) {
+
                                     errorMessage =
                                         "Registration failed. Please check your connection and try again."
+
                                 } finally {
                                     isLoading = false
                                 }
@@ -348,13 +499,17 @@ fun RegisterScreen(
                     containerColor = PrimaryDark
                 )
             ) {
+
                 if (isLoading) {
+
                     CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
                         color = Color.White,
                         strokeWidth = 2.dp
                     )
+
                 } else {
+
                     Text(
                         text = if (registrationSubmitted)
                             "Registration Submitted"
@@ -370,7 +525,9 @@ fun RegisterScreen(
 
             TextButton(
                 enabled = !isLoading,
-                onClick = { navigateToLogin() }
+                onClick = {
+                    navigateToLogin()
+                }
             ) {
                 Text(
                     text = "Already have an account? Sign In",
@@ -388,6 +545,15 @@ fun RegisterScreen(navController: NavController) {
     RegisterScreen(
         onNavigate = { route ->
             navController.navigate(route)
+        },
+        onNavigateToDashboard = {
+            navController.navigate(Routes.DASHBOARD) {
+                popUpTo(Routes.LOGIN) {
+                    inclusive = true
+                }
+                launchSingleTop = true
+            }
         }
     )
 }
+

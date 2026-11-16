@@ -1,6 +1,8 @@
+
 package com.mzansiautorepairs.auth
 
 import android.content.Context
+import android.util.Log
 import android.util.Patterns
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -17,8 +19,8 @@ import com.mzansiautorepairs.data.UserEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 private val Context.sessionStore by preferencesDataStore(name = "session")
 private val KEY_USER_ID = stringPreferencesKey("user_id")
@@ -36,10 +38,18 @@ class AuthRepository(private val context: Context) {
     private val firestore = FirebaseFirestore.getInstance()
 
     companion object {
+        private const val TAG = "AuthRepository"
+
         private const val USERS_COLLECTION = "users"
+        private const val SYSTEM_COLLECTION = "system"
+        private const val BOOTSTRAP_DOCUMENT = "adminBootstrap"
+
         private const val STATUS_PENDING = "PENDING"
         private const val STATUS_APPROVED = "APPROVED"
         private const val ROLE_PENDING = "PENDING"
+
+        private const val REGISTRATION_SUCCESS_MESSAGE =
+            "Registration submitted successfully. Your account is awaiting administrator approval. You can sign in once your account has been approved."
     }
 
     // EMAIL AND PASSWORD REGISTRATION
@@ -49,24 +59,31 @@ class AuthRepository(private val context: Context) {
         phone: String,
         password: String,
         confirmPassword: String,
-        role: UserRole
+        role: UserRole,
+        workId: String = ""
     ): AuthResult = withContext(Dispatchers.IO) {
 
         val cleanName = fullName.trim()
         val cleanEmail = email.trim().lowercase()
-        val cleanPhone = phone.trim()
+        val cleanPhone = phone.filter { it.isDigit() }
+        val cleanWorkId = workId.trim()
 
         val validationError = validateRegistration(
             cleanName,
             cleanEmail,
             cleanPhone,
             password,
-            confirmPassword,
-            role
+            confirmPassword
         )
 
         if (validationError != null) {
             return@withContext AuthResult.Error(validationError)
+        }
+
+        if (role == UserRole.ADMIN && cleanWorkId.isBlank()) {
+            return@withContext AuthResult.Error(
+                "Administrator Work ID is required."
+            )
         }
 
         try {
@@ -80,6 +97,36 @@ class AuthRepository(private val context: Context) {
                 )
 
             try {
+                if (role == UserRole.ADMIN) {
+
+                    val initialAdminCreated = createInitialAdminIfAvailable(
+                        uid = firebaseUser.uid,
+                        fullName = cleanName,
+                        email = cleanEmail,
+                        phone = cleanPhone
+                    )
+
+                    if (initialAdminCreated) {
+                        val adminUser = UserEntity(
+                            id = firebaseUser.uid,
+                            fullName = cleanName,
+                            email = cleanEmail,
+                            phone = cleanPhone,
+                            role = UserRole.ADMIN.name,
+                            passwordHash = ""
+                        )
+
+                        cacheUser(adminUser)
+                        saveSession(adminUser.id)
+
+                        // Keep Firebase signed in so the administrator
+                        // can proceed to the dashboard.
+                        return@withContext AuthResult.Success(adminUser)
+                    }
+                }
+
+                // Technicians, receptionists and additional administrator
+                // applicants must wait for approval.
                 createPendingProfile(
                     uid = firebaseUser.uid,
                     fullName = cleanName,
@@ -89,20 +136,18 @@ class AuthRepository(private val context: Context) {
                     provider = "EMAIL"
                 )
 
-                // Registration does not automatically grant access.
                 firebaseAuth.signOut()
 
-                AuthResult.Error(
-                    "Registration submitted successfully. " +
-                            "Your account is awaiting administrator approval. " +
-                            "You can sign in once your account has been approved."
-                )
+                AuthResult.PendingApproval(REGISTRATION_SUCCESS_MESSAGE)
 
             } catch (e: Exception) {
-                // Avoid leaving an authentication account without a profile.
+                Log.e(TAG, "Registration profile creation failed", e)
+
                 try {
                     firebaseUser.delete().await()
-                } catch (_: Exception) {
+                } catch (deleteError: Exception) {
+                    Log.e(TAG, "Could not remove incomplete account", deleteError)
+                } finally {
                     firebaseAuth.signOut()
                 }
 
@@ -112,46 +157,51 @@ class AuthRepository(private val context: Context) {
             }
 
         } catch (e: FirebaseAuthUserCollisionException) {
-            AuthResult.Error(
-                "An account with this email already exists."
-            )
+            AuthResult.Error("An account with this email already exists.")
         } catch (e: FirebaseAuthWeakPasswordException) {
-            AuthResult.Error(
-                "Your password is too weak. Use at least 8 characters."
-            )
+            AuthResult.Error("Your password is too weak. Use at least 8 characters.")
         } catch (e: Exception) {
+            Log.e(TAG, "Email registration failed", e)
+            firebaseAuth.signOut()
             AuthResult.Error(readableError(e))
         }
     }
 
     // GOOGLE REGISTRATION
-    // GoogleAuthHelper must sign the user into Firebase before this is called.
     suspend fun registerWithGoogle(
         fullName: String,
         email: String,
         phone: String,
-        role: UserRole
+        role: UserRole,
+        workId: String = ""
     ): AuthResult = withContext(Dispatchers.IO) {
 
         val cleanName = fullName.trim()
         val cleanEmail = email.trim().lowercase()
-        val cleanPhone = phone.trim()
+        val cleanPhone = phone.filter { it.isDigit() }
+        val cleanWorkId = workId.trim()
 
         if (cleanName.isBlank()) {
+            firebaseAuth.signOut()
             return@withContext AuthResult.Error("Full name is required.")
         }
 
         if (!Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()) {
+            firebaseAuth.signOut()
             return@withContext AuthResult.Error("Enter a valid email address.")
         }
 
-        if (cleanPhone.filter { it.isDigit() }.length < 10) {
-            return@withContext AuthResult.Error("Enter a valid phone number.")
+        if (cleanPhone.length != 10 || !cleanPhone.startsWith("0")) {
+            firebaseAuth.signOut()
+            return@withContext AuthResult.Error(
+                "Enter a valid South African phone number with exactly 10 digits, starting with 0."
+            )
         }
 
-        if (role == UserRole.ADMIN) {
+        if (role == UserRole.ADMIN && cleanWorkId.isBlank()) {
+            firebaseAuth.signOut()
             return@withContext AuthResult.Error(
-                "Administrator accounts must be created through authorised setup."
+                "Administrator Work ID is required."
             )
         }
 
@@ -161,6 +211,7 @@ class AuthRepository(private val context: Context) {
             )
 
         if (firebaseUser.email?.trim()?.lowercase() != cleanEmail) {
+            firebaseAuth.signOut()
             return@withContext AuthResult.Error(
                 "The Google account does not match the supplied email."
             )
@@ -174,9 +225,7 @@ class AuthRepository(private val context: Context) {
             val existingProfile = profileReference.get().await()
 
             if (existingProfile.exists()) {
-                val existingUser = existingProfile.toLocalUser(firebaseUser.uid)
                 val status = existingProfile.getString("status")
-
                 firebaseAuth.signOut()
 
                 return@withContext if (status == STATUS_APPROVED) {
@@ -185,8 +234,33 @@ class AuthRepository(private val context: Context) {
                     )
                 } else {
                     AuthResult.Error(
-                        "Your account is awaiting administrator approval."
+                        "This account is already registered and is awaiting administrator approval."
                     )
+                }
+            }
+
+            if (role == UserRole.ADMIN) {
+                val initialAdminCreated = createInitialAdminIfAvailable(
+                    uid = firebaseUser.uid,
+                    fullName = cleanName,
+                    email = cleanEmail,
+                    phone = cleanPhone
+                )
+
+                if (initialAdminCreated) {
+                    val adminUser = UserEntity(
+                        id = firebaseUser.uid,
+                        fullName = cleanName,
+                        email = cleanEmail,
+                        phone = cleanPhone,
+                        role = UserRole.ADMIN.name,
+                        passwordHash = ""
+                    )
+
+                    cacheUser(adminUser)
+                    saveSession(adminUser.id)
+
+                    return@withContext AuthResult.Success(adminUser)
                 }
             }
 
@@ -201,25 +275,83 @@ class AuthRepository(private val context: Context) {
 
             firebaseAuth.signOut()
 
-            AuthResult.PendingApproval(
-                "Registration submitted successfully. Your account is awaiting administrator approval. You can sign in once your account has been approved."
-            )
+            AuthResult.PendingApproval(REGISTRATION_SUCCESS_MESSAGE)
 
         } catch (e: Exception) {
+            Log.e(TAG, "Google registration failed", e)
             firebaseAuth.signOut()
+
             AuthResult.Error(
                 "Google registration could not be completed. Please try again."
             )
         }
     }
 
+    // CREATE THE FIRST ADMINISTRATOR ONLY
+    //
+    // The Work ID is deliberately not stored for this temporary demo.
+    // The Firestore transaction and security rules protect the one-time
+    // initial administrator setup.
+    private suspend fun createInitialAdminIfAvailable(
+        uid: String,
+        fullName: String,
+        email: String,
+        phone: String
+    ): Boolean {
+
+        val adminReference = firestore
+            .collection(USERS_COLLECTION)
+            .document(uid)
+
+        val bootstrapReference = firestore
+            .collection(SYSTEM_COLLECTION)
+            .document(BOOTSTRAP_DOCUMENT)
+
+        return firestore.runTransaction { transaction ->
+
+            val bootstrap = transaction.get(bootstrapReference)
+
+            // An initial administrator has already been created.
+            if (bootstrap.exists()) {
+                return@runTransaction false
+            }
+
+            val adminProfile = hashMapOf<String, Any>(
+                "uid" to uid,
+                "fullName" to fullName,
+                "email" to email,
+                "phone" to phone,
+                "requestedRole" to UserRole.ADMIN.name,
+                "role" to UserRole.ADMIN.name,
+                "status" to STATUS_APPROVED,
+                "authProvider" to "EMAIL",
+                "createdAt" to FieldValue.serverTimestamp()
+            )
+
+            transaction.set(adminReference, adminProfile)
+
+            transaction.set(
+                bootstrapReference,
+                mapOf(
+                    "uid" to uid,
+                    "createdAt" to FieldValue.serverTimestamp()
+                )
+            )
+
+            true
+
+        }.await()
+    }
+
     // LOOK UP AN EXISTING GOOGLE USER
     suspend fun findGoogleUser(email: String): UserEntity? =
         withContext(Dispatchers.IO) {
 
-            val firebaseUser = firebaseAuth.currentUser ?: return@withContext null
+            val firebaseUser = firebaseAuth.currentUser
+                ?: return@withContext null
 
             if (firebaseUser.email?.trim()?.lowercase() != email.trim().lowercase()) {
+                firebaseAuth.signOut()
                 return@withContext null
             }
 
@@ -230,20 +362,27 @@ class AuthRepository(private val context: Context) {
                     .get()
                     .await()
 
-                if (!snapshot.exists()) {
-                    return@withContext null
-                }
-
-                if (snapshot.getString("status") != STATUS_APPROVED) {
+                if (!snapshot.exists() ||
+                    snapshot.getString("status") != STATUS_APPROVED
+                ) {
+                    firebaseAuth.signOut()
                     return@withContext null
                 }
 
                 val user = snapshot.toLocalUser(firebaseUser.uid)
+
+                if (user.role !in UserRole.entries.map { it.name }) {
+                    firebaseAuth.signOut()
+                    return@withContext null
+                }
+
                 cacheUser(user)
                 saveSession(user.id)
                 user
 
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e(TAG, "Google user lookup failed", e)
+                firebaseAuth.signOut()
                 null
             }
         }
@@ -263,9 +402,7 @@ class AuthRepository(private val context: Context) {
         }
 
         if (!Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()) {
-            return@withContext AuthResult.Error(
-                "Enter a valid email address."
-            )
+            return@withContext AuthResult.Error("Enter a valid email address.")
         }
 
         try {
@@ -320,14 +457,16 @@ class AuthRepository(private val context: Context) {
             AuthResult.Success(user)
 
         } catch (e: FirebaseAuthInvalidCredentialsException) {
+            firebaseAuth.signOut()
             AuthResult.Error("Incorrect email or password.")
         } catch (e: Exception) {
+            Log.e(TAG, "Login failed", e)
+            firebaseAuth.signOut()
             AuthResult.Error(readableError(e))
         }
     }
 
     // SEND PASSWORD RESET EMAIL
-    // Returns null when successful, otherwise an error message.
     suspend fun sendPasswordResetEmail(email: String): String? =
         withContext(Dispatchers.IO) {
 
@@ -341,6 +480,7 @@ class AuthRepository(private val context: Context) {
                 firebaseAuth.sendPasswordResetEmail(cleanEmail).await()
                 null
             } catch (e: Exception) {
+                Log.e(TAG, "Password reset failed", e)
                 readableError(e)
             }
         }
@@ -348,6 +488,7 @@ class AuthRepository(private val context: Context) {
     // LOGOUT
     suspend fun logout() {
         firebaseAuth.signOut()
+
         context.sessionStore.edit {
             it.remove(KEY_USER_ID)
         }
@@ -378,7 +519,7 @@ class AuthRepository(private val context: Context) {
                 firebaseAuth.currentUser?.uid == savedId
     }
 
-    // CREATE A FIRESTORE PROFILE WITH NO ACTIVE ROLE
+    // CREATE A PENDING PROFILE
     private suspend fun createPendingProfile(
         uid: String,
         fullName: String,
@@ -405,13 +546,13 @@ class AuthRepository(private val context: Context) {
             .await()
     }
 
+    // REGISTRATION VALIDATION
     private fun validateRegistration(
         fullName: String,
         email: String,
         phone: String,
         password: String,
-        confirmPassword: String,
-        role: UserRole
+        confirmPassword: String
     ): String? {
 
         return when {
@@ -421,8 +562,8 @@ class AuthRepository(private val context: Context) {
             !Patterns.EMAIL_ADDRESS.matcher(email).matches() ->
                 "Enter a valid email address."
 
-            phone.filter { it.isDigit() }.length < 10 ->
-                "Enter a valid phone number."
+            phone.length != 10 || !phone.startsWith("0") ->
+                "Enter a valid South African phone number with exactly 10 digits, starting with 0."
 
             password.length < 8 ->
                 "Password must be at least 8 characters."
@@ -434,14 +575,11 @@ class AuthRepository(private val context: Context) {
             password != confirmPassword ->
                 "Passwords do not match."
 
-            role == UserRole.ADMIN ->
-                "Administrator accounts must be created through authorised setup."
-
             else -> null
         }
     }
 
-    // CONVERT FIRESTORE PROFILE TO THE EXISTING ROOM USER MODEL
+    // CONVERT FIRESTORE PROFILE TO ROOM USER
     private fun com.google.firebase.firestore.DocumentSnapshot.toLocalUser(
         uid: String
     ): UserEntity {
@@ -478,3 +616,4 @@ class AuthRepository(private val context: Context) {
         }
     }
 }
+
