@@ -1,19 +1,17 @@
+
 package com.mzansiautorepairs.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.mzansiautorepairs.auth.AuthRepository
@@ -33,14 +31,13 @@ fun StaffApprovalScreen(navController: NavController) {
     }
 
     var isLoading by remember { mutableStateOf(true) }
+    var isProcessing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var successMessage by remember { mutableStateOf("") }
 
     var applicationToReject by remember {
         mutableStateOf<PendingStaffApplication?>(null)
     }
-
-    var processingUid by remember { mutableStateOf<String?>(null) }
 
     fun loadApplications() {
         scope.launch {
@@ -58,51 +55,6 @@ fun StaffApprovalScreen(navController: NavController) {
         }
     }
 
-    fun approveApplication(application: PendingStaffApplication) {
-        scope.launch {
-            processingUid = application.uid
-            errorMessage = ""
-
-            try {
-                repository.approveStaffApplication(application.uid)
-
-                successMessage =
-                    "${application.fullName} has been approved."
-
-                loadApplications()
-
-            } catch (e: Exception) {
-                errorMessage = e.message
-                    ?: "Could not approve this application."
-            } finally {
-                processingUid = null
-            }
-        }
-    }
-
-    fun rejectApplication(application: PendingStaffApplication) {
-        scope.launch {
-            processingUid = application.uid
-            errorMessage = ""
-
-            try {
-                repository.rejectStaffApplication(application.uid)
-
-                successMessage =
-                    "${application.fullName}'s application was rejected."
-
-                applicationToReject = null
-                loadApplications()
-
-            } catch (e: Exception) {
-                errorMessage = e.message
-                    ?: "Could not reject this application."
-            } finally {
-                processingUid = null
-            }
-        }
-    }
-
     LaunchedEffect(Unit) {
         loadApplications()
     }
@@ -111,7 +63,9 @@ fun StaffApprovalScreen(navController: NavController) {
         topBar = {
             MzansiTopBar(
                 title = "Staff Approvals",
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
     ) { padding ->
@@ -120,34 +74,31 @@ fun StaffApprovalScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
         ) {
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "Pending Applications",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge
                     )
 
                     Text(
-                        "Review and manage new staff registrations.",
-                        style = MaterialTheme.typography.bodyMedium,
+                        "${applications.size} application(s) awaiting review",
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 IconButton(
-                    onClick = {
-                        successMessage = ""
-                        loadApplications()
-                    },
-                    enabled = !isLoading
+                    onClick = { loadApplications() },
+                    enabled = !isLoading && !isProcessing
                 ) {
                     Icon(
                         Icons.Default.Refresh,
@@ -156,40 +107,20 @@ fun StaffApprovalScreen(navController: NavController) {
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
             if (successMessage.isNotBlank()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Text(
-                        successMessage,
-                        modifier = Modifier.padding(14.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
+                Text(
+                    successMessage,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
 
             if (errorMessage.isNotBlank()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
-                ) {
-                    Text(
-                        errorMessage,
-                        modifier = Modifier.padding(14.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
+                Text(
+                    errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
 
             when {
@@ -202,7 +133,7 @@ fun StaffApprovalScreen(navController: NavController) {
                     }
                 }
 
-                applications.isEmpty() -> {
+                applications.isEmpty() && errorMessage.isBlank() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -211,22 +142,21 @@ fun StaffApprovalScreen(navController: NavController) {
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                Icons.Default.CheckCircle,
+                                Icons.Default.Person,
                                 contentDescription = null,
-                                modifier = Modifier.size(52.dp),
+                                modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
 
                             Spacer(Modifier.height(12.dp))
 
                             Text(
-                                "No Pending Applications",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                "No pending applications",
+                                style = MaterialTheme.typography.titleMedium
                             )
 
                             Text(
-                                "There are currently no staff registrations waiting for approval.",
+                                "New staff registrations will appear here.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -235,33 +165,104 @@ fun StaffApprovalScreen(navController: NavController) {
                 }
 
                 else -> {
-                    Text(
-                        "${applications.size} application(s) awaiting review",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
                     LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(bottom = 20.dp)
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(
                             applications,
                             key = { it.uid }
                         ) { application ->
 
-                            StaffApplicationCard(
-                                application = application,
-                                isProcessing = processingUid == application.uid,
-                                onApprove = {
-                                    approveApplication(application)
-                                },
-                                onReject = {
-                                    applicationToReject = application
+                            Card(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Text(
+                                        application.fullName,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+
+                                    Spacer(Modifier.height(6.dp))
+
+                                    Text("Email: ${application.email}")
+                                    Text("Phone: ${application.phone}")
+                                    Text("Requested role: ${application.requestedRole}")
+
+                                    Spacer(Modifier.height(8.dp))
+
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        shape = MaterialTheme.shapes.small
+                                    ) {
+                                        Text(
+                                            "PENDING APPROVAL",
+                                            modifier = Modifier.padding(
+                                                horizontal = 10.dp,
+                                                vertical = 5.dp
+                                            ),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    }
+
+                                    Spacer(Modifier.height(16.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            modifier = Modifier.weight(1f),
+                                            enabled = !isProcessing,
+                                            onClick = {
+                                                scope.launch {
+                                                    isProcessing = true
+                                                    errorMessage = ""
+                                                    successMessage = ""
+
+                                                    try {
+                                                        repository.approveStaffApplication(
+                                                            application.uid
+                                                        )
+
+                                                        applications = applications.filter {
+                                                            it.uid != application.uid
+                                                        }
+
+                                                        successMessage =
+                                                            "${application.fullName} has been approved."
+
+                                                    } catch (e: Exception) {
+                                                        errorMessage = e.message
+                                                            ?: "Approval failed."
+                                                    } finally {
+                                                        isProcessing = false
+                                                    }
+                                                }
+                                            }
+                                        ) {
+                                            Text("Approve")
+                                        }
+
+                                        OutlinedButton(
+                                            modifier = Modifier.weight(1f),
+                                            enabled = !isProcessing,
+                                            onClick = {
+                                                applicationToReject = application
+                                            },
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.error
+                                            )
+                                        ) {
+                                            Text("Reject")
+                                        }
+                                    }
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -273,25 +274,47 @@ fun StaffApprovalScreen(navController: NavController) {
 
         AlertDialog(
             onDismissRequest = {
-                if (processingUid == null) {
-                    applicationToReject = null
-                }
+                applicationToReject = null
             },
             title = {
                 Text("Reject Application?")
             },
             text = {
                 Text(
-                    "Are you sure you want to reject " +
-                            "${application.fullName}'s staff application?"
+                    "Are you sure you want to reject ${application.fullName}'s staff application?"
                 )
             },
             confirmButton = {
                 TextButton(
+                    enabled = !isProcessing,
                     onClick = {
-                        rejectApplication(application)
-                    },
-                    enabled = processingUid == null
+                        scope.launch {
+                            isProcessing = true
+                            errorMessage = ""
+                            successMessage = ""
+
+                            try {
+                                repository.rejectStaffApplication(
+                                    application.uid
+                                )
+
+                                applications = applications.filter {
+                                    it.uid != application.uid
+                                }
+
+                                successMessage =
+                                    "${application.fullName}'s application was rejected."
+
+                                applicationToReject = null
+
+                            } catch (e: Exception) {
+                                errorMessage = e.message
+                                    ?: "Could not reject application."
+                            } finally {
+                                isProcessing = false
+                            }
+                        }
+                    }
                 ) {
                     Text(
                         "Reject",
@@ -303,123 +326,11 @@ fun StaffApprovalScreen(navController: NavController) {
                 TextButton(
                     onClick = {
                         applicationToReject = null
-                    },
-                    enabled = processingUid == null
+                    }
                 ) {
                     Text("Cancel")
                 }
             }
         )
-    }
-}
-
-@Composable
-private fun StaffApplicationCard(
-    application: PendingStaffApplication,
-    isProcessing: Boolean,
-    onApprove: () -> Unit,
-    onReject: () -> Unit
-) {
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        application.fullName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        application.requestedRole.replace("_", " "),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Surface(
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text(
-                        "PENDING",
-                        modifier = Modifier.padding(
-                            horizontal = 10.dp,
-                            vertical = 6.dp
-                        ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Text(
-                "Email: ${application.email}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(Modifier.height(5.dp))
-
-            Text(
-                "Phone: ${application.phone}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            if (isProcessing) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = onApprove,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = null
-                        )
-                        Spacer(Modifier.width(5.dp))
-                        Text("Approve")
-                    }
-
-                    OutlinedButton(
-                        onClick = onReject,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Icon(
-                            Icons.Default.Cancel,
-                            contentDescription = null
-                        )
-                        Spacer(Modifier.width(5.dp))
-                        Text("Reject")
-                    }
-                }
-            }
-        }
     }
 }
