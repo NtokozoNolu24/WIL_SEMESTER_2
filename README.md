@@ -31,12 +31,11 @@
 9. [Use of GitHub](#9-use-of-github)
 10. [Use of GitHub Actions](#10-use-of-github-actions)
 11. [Testing Approach](#11-testing-approach)
-12. [Screenshots](#12-screenshots)
-13. [Release Notes](#13-release-notes)
-14. [Expected Impact](#14-expected-impact)
-15. [Team Contributions](#15-team-contributions)
-16. [AI Tool Usage Declaration](#16-ai-tool-usage-declaration)
-17. [References](#17-references)
+12. [Release Notes](#12-release-notes)
+13. [Expected Impact](#13-expected-impact)
+14. [Team Contributions](#14-team-contributions)
+15. [AI Tool Usage Declaration](#15-ai-tool-usage-declaration)
+16. [References](#16-references)
 
 ---
 
@@ -138,8 +137,6 @@ Forms check that required fields are completed, that email addresses are valid a
 ### 5.10 Features planned in the system design
 The Task 1 sitemap also defined job card creation, technician assignment, service tracking, payment records and management reports. These form part of the full system design, and the status of each in the current prototype is listed in the release notes (Section 13).
 
-<!-- CONFIRM: make sure every feature above actually exists in your app. Delete or move any that do not. -->
-
 ---
 
 ## 6. Design Considerations
@@ -162,7 +159,6 @@ Most customers will use the application on a phone, so layouts were designed for
 ### 6.4 Visual design
 The design uses a consistent logo placement, header, footer and typography across all screens. Footers carry contact details, links and copyright information. Colour and spacing choices were made to keep text readable and to make important actions, such as *Book a Service*, easy to find.
 
-<!-- CONFIRM: add your actual colour palette, font choices and logo details here -->
 
 ### 6.5 Accessibility
 Labels are written in plain language, buttons are large enough for touch input, and important information is not communicated by colour alone. These choices help users with different abilities and in different conditions, such as using a phone outdoors.
@@ -224,14 +220,6 @@ Because the system stores personal and business information, security was treate
 - **Session management.** Users can log out, ending their session, which is especially important on shared devices.
 - **Secrets management.** API keys and configuration files that must not be public are kept out of the repository (see Section 9.4).
 - **Data integrity.** Each vehicle is linked to its owner, and records are retrieved by identifiers rather than by free-text matching, reducing the chance of showing one customer's information to another.
-
-**Screenshot evidence for the Firebase setup** (replace with your own images):
-
-![Firebase Authentication users](docs/images/firebase-auth.png)
-*Figure 1: Registered users in Firebase Authentication.*
-
-![Firebase database collections](docs/images/firebase-database.png)
-*Figure 2: Database collections containing vehicles, bookings and reviews.*
 
 ---
 
