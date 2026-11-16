@@ -11,6 +11,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mzansiautorepairs.UserRole
@@ -31,6 +32,14 @@ sealed class AuthResult {
     data class Error(val message: String) : AuthResult()
 }
 
+data class PendingStaffApplication(
+    val uid: String,
+    val fullName: String,
+    val email: String,
+    val phone: String,
+    val requestedRole: String
+)
+
 class AuthRepository(private val context: Context) {
 
     private val userDao = AppDatabase.get(context).userDao()
@@ -46,6 +55,8 @@ class AuthRepository(private val context: Context) {
 
         private const val STATUS_PENDING = "PENDING"
         private const val STATUS_APPROVED = "APPROVED"
+        private const val STATUS_REJECTED = "REJECTED"
+
         private const val ROLE_PENDING = "PENDING"
 
         private const val REGISTRATION_SUCCESS_MESSAGE =
@@ -119,14 +130,10 @@ class AuthRepository(private val context: Context) {
                         cacheUser(adminUser)
                         saveSession(adminUser.id)
 
-                        // Keep Firebase signed in so the administrator
-                        // can proceed to the dashboard.
                         return@withContext AuthResult.Success(adminUser)
                     }
                 }
 
-                // Technicians, receptionists and additional administrator
-                // applicants must wait for approval.
                 createPendingProfile(
                     uid = firebaseUser.uid,
                     fullName = cleanName,
@@ -288,10 +295,6 @@ class AuthRepository(private val context: Context) {
     }
 
     // CREATE THE FIRST ADMINISTRATOR ONLY
-    //
-    // The Work ID is deliberately not stored for this temporary demo.
-    // The Firestore transaction and security rules protect the one-time
-    // initial administrator setup.
     private suspend fun createInitialAdminIfAvailable(
         uid: String,
         fullName: String,
@@ -311,7 +314,6 @@ class AuthRepository(private val context: Context) {
 
             val bootstrap = transaction.get(bootstrapReference)
 
-            // An initial administrator has already been created.
             if (bootstrap.exists()) {
                 return@runTransaction false
             }
@@ -466,6 +468,132 @@ class AuthRepository(private val context: Context) {
         }
     }
 
+    // GET PENDING STAFF APPLICATIONS
+    suspend fun getPendingStaffApplications(): List<PendingStaffApplication> =
+        withContext(Dispatchers.IO) {
+
+            if (!isCurrentUserAdmin()) {
+                throw SecurityException(
+                    "Only an approved administrator can view staff applications."
+                )
+            }
+
+            val snapshot = firestore
+                .collection(USERS_COLLECTION)
+                .whereEqualTo("status", STATUS_PENDING)
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { document ->
+
+                val requestedRole =
+                    document.getString("requestedRole") ?: return@mapNotNull null
+
+                if (requestedRole != UserRole.TECHNICIAN.name &&
+                    requestedRole != UserRole.RECEPTIONIST.name
+                ) {
+                    return@mapNotNull null
+                }
+
+                PendingStaffApplication(
+                    uid = document.id,
+                    fullName = document.getString("fullName").orEmpty(),
+                    email = document.getString("email").orEmpty(),
+                    phone = document.getString("phone").orEmpty(),
+                    requestedRole = requestedRole
+                )
+            }
+        }
+
+    // APPROVE A STAFF APPLICATION
+    suspend fun approveStaffApplication(uid: String) =
+        withContext(Dispatchers.IO) {
+
+            if (!isCurrentUserAdmin()) {
+                throw SecurityException(
+                    "Only an approved administrator can approve staff."
+                )
+            }
+
+            val reference = firestore
+                .collection(USERS_COLLECTION)
+                .document(uid)
+
+            val application = reference.get().await()
+
+            if (!application.exists() ||
+                application.getString("status") != STATUS_PENDING
+            ) {
+                throw IllegalStateException(
+                    "This application is no longer pending."
+                )
+            }
+
+            val requestedRole = application.getString("requestedRole")
+
+            if (requestedRole != UserRole.TECHNICIAN.name &&
+                requestedRole != UserRole.RECEPTIONIST.name
+            ) {
+                throw IllegalArgumentException("Invalid staff role.")
+            }
+
+            reference.update(
+                mapOf(
+                    "role" to requestedRole,
+                    "status" to STATUS_APPROVED,
+                    "approvedAt" to FieldValue.serverTimestamp()
+                )
+            ).await()
+        }
+
+    // REJECT A STAFF APPLICATION
+    suspend fun rejectStaffApplication(uid: String) =
+        withContext(Dispatchers.IO) {
+
+            if (!isCurrentUserAdmin()) {
+                throw SecurityException(
+                    "Only an approved administrator can reject staff."
+                )
+            }
+
+            val reference = firestore
+                .collection(USERS_COLLECTION)
+                .document(uid)
+
+            val application = reference.get().await()
+
+            if (!application.exists() ||
+                application.getString("status") != STATUS_PENDING
+            ) {
+                throw IllegalStateException(
+                    "This application is no longer pending."
+                )
+            }
+
+            reference.update(
+                mapOf(
+                    "status" to STATUS_REJECTED,
+                    "rejectedAt" to FieldValue.serverTimestamp()
+                )
+            ).await()
+        }
+
+    // CHECK CURRENT USER IS AN APPROVED ADMINISTRATOR
+    private suspend fun isCurrentUserAdmin(): Boolean {
+
+        val currentUser = firebaseAuth.currentUser ?: return false
+
+        val profile = firestore
+            .collection(USERS_COLLECTION)
+            .document(currentUser.uid)
+            .get()
+            .await()
+
+        return profile.exists() &&
+                profile.getString("role") == UserRole.ADMIN.name &&
+                profile.getString("status") == STATUS_APPROVED
+    }
+
     // SEND PASSWORD RESET EMAIL
     suspend fun sendPasswordResetEmail(email: String): String? =
         withContext(Dispatchers.IO) {
@@ -496,6 +624,7 @@ class AuthRepository(private val context: Context) {
 
     // CURRENT USER
     suspend fun getCurrentUser(): UserEntity? {
+
         val userId = context.sessionStore.data
             .map { it[KEY_USER_ID] }
             .first()
@@ -528,6 +657,7 @@ class AuthRepository(private val context: Context) {
         requestedRole: UserRole,
         provider: String
     ) {
+
         val profile = hashMapOf<String, Any>(
             "uid" to uid,
             "fullName" to fullName,
@@ -580,9 +710,8 @@ class AuthRepository(private val context: Context) {
     }
 
     // CONVERT FIRESTORE PROFILE TO ROOM USER
-    private fun com.google.firebase.firestore.DocumentSnapshot.toLocalUser(
-        uid: String
-    ): UserEntity {
+    private fun DocumentSnapshot.toLocalUser(uid: String): UserEntity {
+
         return UserEntity(
             id = uid,
             fullName = getString("fullName").orEmpty(),
@@ -605,6 +734,7 @@ class AuthRepository(private val context: Context) {
 
     private fun readableError(exception: Exception): String {
         return when (exception) {
+
             is FirebaseAuthUserCollisionException ->
                 "An account with this email already exists."
 
