@@ -17,8 +17,12 @@ import com.mzansiautorepairs.screens.LoginScreen
 import com.mzansiautorepairs.screens.RegisterScreen
 import com.mzansiautorepairs.screens.ServiceScreen
 import com.mzansiautorepairs.screens.SettingsScreen
+import com.mzansiautorepairs.screens.TechnicianScreen
+import com.mzansiautorepairs.screens.VehicleScreen
 
 object Routes {
+    const val TECHNICIANS = "technicians"
+    const val VEHICLES = "vehicles"
     const val LOGIN = "login"
     const val REGISTER = "register"
 
@@ -76,6 +80,15 @@ fun AppNavHost(
         composable(Routes.SETTINGS) {
             SettingsScreen(navController = navController)
         }
+
+        composable(Routes.TECHNICIANS) {
+            TechnicianScreen(navController = navController)
+        }
+
+        composable(Routes.VEHICLES) {
+            VehicleScreen(navController = navController)
+        }
+
 
     }
 }

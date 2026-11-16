@@ -1,3 +1,4 @@
+
 package com.mzansiautorepairs
 
 import android.os.Bundle
@@ -16,8 +17,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Open the Room database, seed it on first run and load the lists the screens use.
-        lifecycleScope.launch { MockData.init(applicationContext) }
+
+        lifecycleScope.launch {
+            MockData.init(applicationContext)
+        }
+
         setContent {
             MzansiTheme {
                 Surface(
@@ -30,3 +34,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+
+
+
+

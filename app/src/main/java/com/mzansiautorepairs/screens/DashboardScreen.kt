@@ -1,3 +1,4 @@
+
 package com.mzansiautorepairs.screens
 
 import androidx.compose.foundation.clickable
@@ -19,10 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.ui.tooling.preview.Preview
 import com.mzansiautorepairs.JobCard
 import com.mzansiautorepairs.JobStatus
 import com.mzansiautorepairs.MockData
@@ -34,89 +35,85 @@ import com.mzansiautorepairs.ui.theme.MzansiAutoRepairsTheme
 import com.mzansiautorepairs.ui.theme.Primary
 import com.mzansiautorepairs.ui.theme.PrimaryDark
 
-/**
- * DashboardScreen displays an overview of workshop operations.
- *
- * Requirements fulfilled:
- * - MzansiTopBar titled "Mzansi Auto Repairs - Dashboard"
- * - Welcome banner "Welcome back, Workshop Staff!"
- * - 4 Stat cards (Total Customers, Total Vehicles, Active Job Cards, Technicians) calculated from MockData
- * - Quick Links (Customers, Job Cards, Services)
- * - "Recent Job Cards" section displaying recent job details with StatusChip and navigation
- *
- * @param onNavigate Navigation callback taking target route string.
- */
 @Composable
 fun DashboardScreen(
     onNavigate: (String) -> Unit = {}
 ) {
-    // 1. Calculations from MockData:
-    // Total Customers count
     val totalCustomers = MockData.customers.size
-    
-    // Total Vehicles count
     val totalVehicles = MockData.vehicles.size
-    
-    // Active Job Cards count: status is neither COMPLETED nor CANCELLED
-    val activeJobCards = MockData.jobCards.count {
-        it.status != JobStatus.COMPLETED && it.status != JobStatus.CANCELLED
-    }
-    
-    // Technicians count
     val totalTechnicians = MockData.technicians.size
 
-    // 2. Fetch list of recent job cards from MockData
+    val activeJobCards = MockData.jobCards.count {
+        it.status != JobStatus.COMPLETED &&
+                it.status != JobStatus.CANCELLED
+    }
+
     val recentJobCards = MockData.jobCards
+        .filter {
+            it.status != JobStatus.COMPLETED &&
+                    it.status != JobStatus.CANCELLED
+        }
+        .take(5)
 
     Scaffold(
         topBar = {
-            MzansiTopBar(title = "Mzansi Auto Repairs - Dashboard")
+            MzansiTopBar(title = "Administrator Dashboard")
         },
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // Section 1: Welcome Banner
+
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Primary),
-                    shape = RoundedCornerShape(12.dp)
+                    colors = CardDefaults.cardColors(
+                        containerColor = Primary
+                    ),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp)
+                        modifier = Modifier.padding(22.dp)
                     ) {
                         Text(
-                            text = "Welcome back, Workshop Staff!",
+                            "Welcome back, Administrator!",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Spacer(Modifier.height(8.dp))
+
                         Text(
-                            text = "Here is an overview of today's workshop activity.",
+                            "Manage your workshop, monitor daily operations and keep track of your business.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.85f)
+                            color = Color.White.copy(alpha = 0.9f)
                         )
                     }
                 }
             }
 
-            // Section 2: 4 Stat Cards calculated from MockData
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     Text(
-                        text = "Workshop Statistics",
-                        style = MaterialTheme.typography.titleMedium,
+                        "Business Overview",
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryDark
+                    )
+
+                    Text(
+                        "A quick summary of your workshop.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Row(
@@ -124,17 +121,23 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         StatCard(
-                            title = "Total Customers",
+                            title = "Customers",
                             value = totalCustomers,
                             icon = Icons.Default.People,
                             modifier = Modifier.weight(1f),
-                            onClick = { onNavigate(Routes.CUSTOMERS) }
+                            onClick = {
+                                onNavigate(Routes.CUSTOMERS)
+                            }
                         )
+
                         StatCard(
-                            title = "Total Vehicles",
+                            title = "Vehicles",
                             value = totalVehicles,
                             icon = Icons.Default.DirectionsCar,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                onNavigate(Routes.VEHICLES)
+                            }
                         )
                     }
 
@@ -143,30 +146,43 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         StatCard(
-                            title = "Active Job Cards",
+                            title = "Active Jobs",
                             value = activeJobCards,
                             icon = Icons.AutoMirrored.Filled.Assignment,
                             modifier = Modifier.weight(1f),
-                            onClick = { onNavigate(Routes.JOBCARDS) }
+                            onClick = {
+                                onNavigate(Routes.JOBCARDS)
+                            }
                         )
+
                         StatCard(
                             title = "Technicians",
                             value = totalTechnicians,
                             icon = Icons.Default.Engineering,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                onNavigate(Routes.TECHNICIANS)
+                            }
                         )
                     }
                 }
             }
 
-            // Section 3: Quick Links row/grid for Customers, Job Cards, Services
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     Text(
-                        text = "Quick Links",
-                        style = MaterialTheme.typography.titleMedium,
+                        "Workshop Management",
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryDark
+                    )
+
+                    Text(
+                        "Quick access to important management sections.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Row(
@@ -177,57 +193,115 @@ fun DashboardScreen(
                             title = "Customers",
                             icon = Icons.Default.People,
                             modifier = Modifier.weight(1f),
-                            onClick = { onNavigate(Routes.CUSTOMERS) }
+                            onClick = {
+                                onNavigate(Routes.CUSTOMERS)
+                            }
                         )
+
+                        QuickLinkCard(
+                            title = "Vehicles",
+                            icon = Icons.Default.DirectionsCar,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                onNavigate(Routes.VEHICLES)
+                            }
+                        )
+
+                        QuickLinkCard(
+                            title = "Technicians",
+                            icon = Icons.Default.Engineering,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                onNavigate(Routes.TECHNICIANS)
+                            }
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         QuickLinkCard(
                             title = "Job Cards",
                             icon = Icons.Default.Build,
                             modifier = Modifier.weight(1f),
-                            onClick = { onNavigate(Routes.JOBCARDS) }
+                            onClick = {
+                                onNavigate(Routes.JOBCARDS)
+                            }
                         )
+
                         QuickLinkCard(
                             title = "Services",
                             icon = Icons.Default.HomeRepairService,
                             modifier = Modifier.weight(1f),
-                            onClick = { onNavigate(Routes.SERVICES) }
+                            onClick = {
+                                onNavigate(Routes.SERVICES)
+                            }
                         )
                     }
                 }
             }
 
-            // Section 4: Recent Job Cards section header
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Recent Job Cards",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryDark
-                    )
-                    TextButton(onClick = { onNavigate(Routes.JOBCARDS) }) {
+                    Column {
+                        Text(
+                            "Recent Active Jobs",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryDark
+                        )
+
+                        Text(
+                            "Monitor ongoing workshop activity.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    TextButton(
+                        onClick = {
+                            onNavigate(Routes.JOBCARDS)
+                        }
+                    ) {
                         Text("View All", color = Primary)
                     }
                 }
             }
 
-            // Section 5: Recent Job Cards scrollable list showing customer name, vehicle reg, description, StatusChip
-            items(recentJobCards, key = { it.id }) { jobCard ->
-                RecentJobCardItem(
-                    jobCard = jobCard,
-                    onClick = { onNavigate(Routes.jobCardDetail(jobCard.id)) }
-                )
+            if (recentJobCards.isEmpty()) {
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "No active job cards available.",
+                            modifier = Modifier.padding(20.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                items(
+                    recentJobCards,
+                    key = { it.id }
+                ) { jobCard ->
+                    RecentJobCardItem(
+                        jobCard = jobCard,
+                        onClick = {
+                            onNavigate(
+                                Routes.jobCardDetail(jobCard.id)
+                            )
+                        }
+                    )
+                }
             }
         }
     }
 }
 
-/**
- * QuickLinkCard component for navigating directly to key feature screens.
- */
 @Composable
 fun QuickLinkCard(
     title: String,
@@ -238,8 +312,13 @@ fun QuickLinkCard(
     Card(
         onClick = onClick,
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier
@@ -254,9 +333,11 @@ fun QuickLinkCard(
                 tint = PrimaryDark,
                 modifier = Modifier.size(28.dp)
             )
-            Spacer(modifier = Modifier.height(6.dp))
+
+            Spacer(Modifier.height(8.dp))
+
             Text(
-                text = title,
+                title,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp
@@ -265,9 +346,6 @@ fun QuickLinkCard(
     }
 }
 
-/**
- * RecentJobCardItem component displaying individual job summary.
- */
 @Composable
 fun RecentJobCardItem(
     jobCard: JobCard,
@@ -277,8 +355,13 @@ fun RecentJobCardItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -289,38 +372,40 @@ fun RecentJobCardItem(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = jobCard.customerName,
+                    jobCard.customerName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+
+                Spacer(Modifier.height(4.dp))
+
                 Text(
-                    text = "Reg: ${jobCard.vehicleReg}",
+                    "Registration: ${jobCard.vehicleReg}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+
+                Spacer(Modifier.height(4.dp))
+
                 Text(
-                    text = jobCard.description,
+                    jobCard.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
+            Spacer(Modifier.width(8.dp))
             StatusChip(status = jobCard.status)
         }
     }
 }
 
-/**
- * Overload accepting NavController directly.
- */
 @Composable
 fun DashboardScreen(navController: NavController) {
     DashboardScreen(
-        onNavigate = { route -> navController.navigate(route) }
+        onNavigate = { route ->
+            navController.navigate(route)
+        }
     )
 }
 
@@ -331,3 +416,5 @@ fun DashboardScreenPreview() {
         DashboardScreen()
     }
 }
+
+
