@@ -45,9 +45,9 @@ body{padding-top:72px!important}
     }
   }, true);
 
-  const cfg = {apiKey:"AIzaSyCxmekWI5XBPMwCfSdTZso6hTZSgZpZQLo",authDomain:"mzansiautorepairs-780ef.firebaseapp.com",
-    projectId:"mzansiautorepairs-780ef",storageBucket:"mzansiautorepairs-780ef.firebasestorage.app",
-    messagingSenderId:"157253497706",appId:"1:157253497706:web:81f60557a9d96365922b13"};
+  const cfg = {apiKey:"AIzaSyDjEcGxpLk_DMeiYRvjlmAHCO685K-Pejs",authDomain:"mzansiautorepairs-41f49.firebaseapp.com",
+    projectId:"mzansiautorepairs-41f49",storageBucket:"mzansiautorepairs-41f49.firebasestorage.app",
+    messagingSenderId:"1020590438428",appId:"1:1020590438428:web:0bdf0494b75f3c8ced87d9"};
   const load = src => new Promise(r => { const s = document.createElement('script'); s.src = src; s.onload = r; s.onerror = r; document.head.appendChild(s); });
   async function start() {
     const base = 'https://www.gstatic.com/firebasejs/9.22.0/';

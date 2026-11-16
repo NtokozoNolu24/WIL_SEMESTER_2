@@ -44,7 +44,7 @@ $('go').onclick=async()=>{
    const name=$('fullName').value.trim();if(!name){$('msg').textContent='Please enter your name.';return;}
    const c=await auth.createUserWithEmailAndPassword(email,pw);
    await c.user.updateProfile({displayName:name});
-   await db.collection('users').doc(c.user.uid).set({uid:c.user.uid,fullName:name,email,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+   await db.collection('users').doc(c.user.uid).set({uid:c.user.uid,fullName:name,email,role:'CUSTOMER',status:'ACTIVE',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
   }else{await auth.signInWithEmailAndPassword(email,pw);}
   location.href='dashboard.html';
  }catch(e){$('msg').textContent=e.message.replace('Firebase: ','');}

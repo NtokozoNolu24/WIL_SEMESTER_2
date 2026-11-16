@@ -4,13 +4,13 @@
 
 // Firebase Config
 const firebaseConfig = {
-    apiKey: "AIzaSyCxmekWI5XBPMwCfSdTZso6hTZSgZpZQLo",
-    authDomain: "mzansiautorepairs-780ef.firebaseapp.com",
-    projectId: "mzansiautorepairs-780ef",
-    storageBucket: "mzansiautorepairs-780ef.firebasestorage.app",
-    messagingSenderId: "157253497706",
-    appId: "1:157253497706:web:81f60557a9d96365922b13",
-    measurementId: "G-07CK4NHGL6"
+    apiKey: "AIzaSyDjEcGxpLk_DMeiYRvjlmAHCO685K-Pejs",
+    authDomain: "mzansiautorepairs-41f49.firebaseapp.com",
+    projectId: "mzansiautorepairs-41f49",
+    storageBucket: "mzansiautorepairs-41f49.firebasestorage.app",
+    messagingSenderId: "1020590438428",
+    appId: "1:1020590438428:web:0bdf0494b75f3c8ced87d9",
+    measurementId: "G-DJ7RGDFMF6"
 };
 
 // Initialize Firebase
