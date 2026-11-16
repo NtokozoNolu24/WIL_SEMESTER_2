@@ -58,7 +58,13 @@ object MockData {
         vehicles.add(v)
         io.launch { db?.vehicleDao()?.upsert(VehicleEntity(v.registration, v.make, v.model, v.year, v.ownerId)) }
     }
+    fun deleteVehicle(registration: String) {
+        vehicles.removeAll { it.registration == registration }
 
+        io.launch {
+            db?.vehicleDao()?.deleteByRegistration(registration)
+        }
+    }
     fun createJobCard(j: JobCard) {
         jobCards.add(j)
         io.launch {

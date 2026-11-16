@@ -35,14 +35,22 @@ interface CustomerDao {
 
 @Dao
 interface VehicleDao {
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(v: VehicleEntity)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(list: List<VehicleEntity>)
-    @Query("SELECT * FROM vehicles") suspend fun getAll(): List<VehicleEntity>
-    @Query("SELECT COUNT(*) FROM vehicles") suspend fun count(): Int
-}
 
+    @Query("SELECT * FROM vehicles")
+    suspend fun getAll(): List<VehicleEntity>
+
+    @Query("SELECT COUNT(*) FROM vehicles")
+    suspend fun count(): Int
+
+    @Query("DELETE FROM vehicles WHERE registration = :registration")
+    suspend fun deleteByRegistration(registration: String)
+}
 @Dao
 interface TechnicianDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
